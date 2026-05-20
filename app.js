@@ -1241,13 +1241,15 @@ function startCoinToss() {
     const finishBtn = document.getElementById('finish-toss-btn');
     const statusText = document.getElementById('toss-status');
     const coins = document.querySelectorAll('.coin');
+    const progressFill = document.getElementById('toss-progress-fill');
 
     resultsList.innerHTML = '';
-    tossBtn.style.display = 'inline-flex';
+    tossBtn.style.display = 'block';
     tossBtn.disabled = false;
-    tossBtn.innerHTML = 'Gieo Hào 1'; // Reset button text
+    tossBtn.innerHTML = 'Gieo Hào 1';
     finishBtn.style.display = 'none';
-    statusText.innerText = 'Sẵn sàng gieo hào 1...';
+    statusText.innerText = 'Hào 1 / 6';
+    if (progressFill) progressFill.style.width = '0%';
 
     // Reset Coins Rotation
     coins.forEach(coin => {
@@ -1335,22 +1337,24 @@ function performToss() {
         coinDetails: coinResults
     });
 
-    // Wait for animation to finish (1.5s match CSS)
+    // Wait for animation to finish (2s matches new CSS animation)
     setTimeout(() => {
         // Stop Animation & Set Final State
         coins.forEach((coin, index) => {
             coin.classList.remove('tossing');
 
-            // Animation ends at 2160deg (6 full spins) + bounce
-            // Let's do a Y-axis flip (more dynamic)
+            // Animation ends at rotateX(3960deg) = 11 full spins
             const isYang = coinResults[index];
-            const finalAngleX = 1440; // 4 spins
-            const finalAngleY = 1800 + (isYang ? 0 : 180); // 5 spins + face
-            coin.style.transform = `rotateX(${finalAngleX}deg) rotateY(${finalAngleY}deg) scale(1)`;
+            const finalAngle = 3960 + (isYang ? 0 : 180);
+            coin.style.transform = `rotateX(${finalAngle}deg)`;
         });
 
-        // Update Results UI
-        addResultToStack(currentTossIndex, lineText, lineSymbol, isMoving);
+        // Update Results UI with visual hexagram line
+        addResultToStack(currentTossIndex, lineText, lineSymbol, isMoving, isYangLine);
+
+        // Update progress bar
+        const progressFill = document.getElementById('toss-progress-fill');
+        if (progressFill) progressFill.style.width = `${(currentTossIndex / 6) * 100}%`;
 
         // Prepare next step
         currentTossIndex++;
@@ -1358,41 +1362,35 @@ function performToss() {
         if (currentTossIndex <= 6) {
             tossBtn.innerHTML = `Gieo Hào ${currentTossIndex}`;
             tossBtn.disabled = false;
-            document.getElementById('toss-status').innerText = `Sẵn sàng gieo hào ${currentTossIndex}...`;
+            document.getElementById('toss-status').innerText = `Hào ${currentTossIndex} / 6`;
         } else {
             tossBtn.style.display = 'none';
-            document.getElementById('finish-toss-btn').style.display = 'inline-flex';
-            document.getElementById('toss-status').innerText = "Đã gieo xong 6 hào!";
+            document.getElementById('finish-toss-btn').style.display = 'block';
+            document.getElementById('toss-status').innerText = 'Đã gieo xong 6 hào!';
         }
 
-    }, 1500);
+    }, 2200);
 }
 
-function addResultToStack(index, text, symbol, isMoving) {
+function addResultToStack(index, text, symbol, isMoving, isYang) {
     const container = document.getElementById('toss-results-list');
     const row = document.createElement('div');
-    row.className = `result-row ${isMoving ? 'moving' : ''}`;
-    row.innerHTML = `
-        <div class="result-label">Hào ${index}</div>
-        <div class="result-value">
-            <span class="result-text">${text}</span>
-            <span class="result-symbol">${symbol}</span>
-        </div>
-    `;
-    // Append (Flex column-reverse will show it at top)
-    container.appendChild(row);
+    row.className = `hex-line-result ${isMoving ? 'moving' : ''}`;
 
-    // Auto scroll logic might be inverted due to column-reverse or just work naturally
-    // With column-reverse, "scrollTop" might refer to the bottom.
-    // It's safer to just set scrollTop to 0 or scrollHeight.
-    // Actually, usually with column-reverse, the scrollbar stays at the bottom (which is visually top?).
-    // Let's force scroll to the "end" of content, which is physically the bottom.
-    container.scrollTop = container.scrollHeight;
+    const lineType = isYang ? 'yang-line' : 'yin-line';
+    const movingClass = isMoving ? 'moving-line' : '';
+    const descText = isMoving ? (isYang ? 'Dương Động' : 'Âm Động') : (isYang ? 'Dương Tĩnh' : 'Âm Tĩnh');
+
+    row.innerHTML = `
+        <span class="hex-num">${index}</span>
+        <div class="hex-visual ${lineType} ${movingClass}"></div>
+        <span class="hex-desc">${descText}</span>
+    `;
+    container.appendChild(row);
 }
 
 function finishTossSequence() {
-    // Populate Main Form
-    // tossResults[0] is Hào 1 (Result of first toss) -> #line-1
+    // Populate Main Form from toss results
     tossResults.forEach((res, idx) => {
         const lineNum = idx + 1;
         const select = document.getElementById(`line-${lineNum}`);
@@ -1405,6 +1403,11 @@ function finishTossSequence() {
     });
 
     closeCoinTossModal();
+
+    // Auto-process divination immediately
+    setTimeout(() => {
+        processDivination();
+    }, 100);
 }
 
 // ============================================
