@@ -462,7 +462,7 @@ body {
     width: 100%;
 }
 
-#captureTarget .yang { background-color: #1a1a1a; }
+#captureTarget .yang { background-color: #2059a6; }
 
 #captureTarget .yin {
     display: flex;
@@ -474,7 +474,7 @@ body {
     content: '';
     display: block;
     width: 42%;
-    background-color: #1a1a1a;
+    background-color: #2059a6;
     height: 100%;
 }
 
