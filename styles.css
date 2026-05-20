@@ -317,7 +317,7 @@ body {
 }
 
 /* ========================================
-   CAPTURE TARGET STYLES (DO NOT MODIFY)
+   CAPTURE TARGET STYLES
    These styles are used for html2canvas image generation
    ======================================== */
 
@@ -328,53 +328,66 @@ body {
 }
 
 #captureTarget {
-    width: 820px;
+    width: 1000px;
     background-color: #f6f5f1;
     padding: 20px;
     font-family: 'Inter', sans-serif;
-    font-size: 17px;
-    color: #000000;
+    font-size: 18px;
+    color: #1a1a1a;
+    position: relative;
 }
 
+#captureTarget::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-image:
+        radial-gradient(circle at 15% 25%, rgba(32, 89, 166, 0.04) 0%, transparent 50%),
+        radial-gradient(circle at 85% 75%, rgba(32, 89, 166, 0.04) 0%, transparent 50%),
+        radial-gradient(circle at 50% 50%, rgba(32, 89, 166, 0.02) 0%, transparent 70%),
+        repeating-linear-gradient(45deg, transparent 0px, transparent 30px, rgba(32, 89, 166, 0.015) 30px, rgba(32, 89, 166, 0.015) 31px),
+        repeating-linear-gradient(-45deg, transparent 0px, transparent 30px, rgba(32, 89, 166, 0.015) 30px, rgba(32, 89, 166, 0.015) 31px);
+    pointer-events: none;
+    z-index: 0;
+}
+
+#captureTarget>* {
+    position: relative;
+    z-index: 1;
+}
+
+/* --- Capture Target Styles (Light Theme for Export Image) --- */
 #captureTarget .info-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    background: #f6f5f1;
-    border-bottom: 2px solid #888;
+    background: transparent;
+    border-bottom: 2px solid #c0c0c0;
     padding: 5px 10px;
     margin-bottom: 10px;
     min-height: 110px;
 }
 
-#captureTarget .info-content { flex: 1; }
+#captureTarget .info-content {
+    flex: 1;
+}
 
 #captureTarget .info-line {
     margin-bottom: 6px;
     line-height: 1.7;
     color: #000000;
-    font-size: 17px;
+    font-size: 18px;
 }
 
-#captureTarget .info-line:last-child { margin-bottom: 0; }
-#captureTarget .info-line strong { color: #000000; }
-
-#captureTarget .info-icon {
-    width: 110px;
-    height: 110px;
-    margin-left: 0;
-    margin-right: -10px;
-    flex-shrink: 0;
-    display: flex;
-    align-items: center;
-    justify-content: center;
+#captureTarget .info-line:last-child {
+    margin-bottom: 0;
 }
 
-#captureTarget .info-icon img {
-    width: 100%;
-    height: 100%;
-    object-fit: contain;
-    opacity: 0.9;
+#captureTarget .info-line strong {
+    color: #000000;
 }
 
 #captureTarget .highlight {
@@ -385,54 +398,19 @@ body {
 #captureTarget .hex-visual-section {
     display: flex;
     justify-content: center;
-    align-items: stretch;
-    gap: 40px;
+    gap: 120px;
     padding: 20px 0;
     border-bottom: 2px solid #888;
     margin-bottom: 10px;
 }
-
-#captureTarget .hex-ngam-indicator {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    min-width: 100px;
-    padding: 0 10px;
-    gap: 4px;
-}
-
-#captureTarget .hex-ngam-indicator span {
-    color: #000;
-    font-weight: 700;
-    font-size: 17px;
-    text-align: center;
-    white-space: nowrap;
-    text-transform: uppercase;
-    line-height: 1.4;
-}
-
-#captureTarget .hex-ngam-inline {
-    margin-top: 5px;
-    font-size: 15px;
-    color: #000;
-    font-weight: normal;
-}
-
-#captureTarget .hex-ngam-indicator:empty { display: none; }
 
 #captureTarget .hex-box {
     text-align: center;
     min-width: 180px;
 }
 
-#captureTarget .hex-box-ho {
-    text-align: center;
-    min-width: 180px;
-}
-
 #captureTarget .hex-title {
-    font-size: 19px;
+    font-size: 20px;
     font-weight: 700;
     color: #c41e3a;
     text-transform: uppercase;
@@ -441,7 +419,7 @@ body {
 }
 
 #captureTarget .hex-family {
-    font-size: 17px;
+    font-size: 18px;
     color: #333;
     font-weight: 600;
     margin-top: 12px;
@@ -462,7 +440,9 @@ body {
     width: 100%;
 }
 
-#captureTarget .yang { background-color: #2059a6; }
+#captureTarget .yang {
+    background-color: #2059a6;
+}
 
 #captureTarget .yin {
     display: flex;
@@ -478,7 +458,9 @@ body {
     height: 100%;
 }
 
-#captureTarget .yang.moving { background-color: #e60000; }
+#captureTarget .yang.moving {
+    background-color: #e60000;
+}
 
 #captureTarget .yin.moving::before,
 #captureTarget .yin.moving::after {
@@ -488,8 +470,8 @@ body {
 #captureTarget table {
     width: 100%;
     border-collapse: collapse;
-    font-size: 17px;
-    background: #f6f5f1;
+    font-size: 18px;
+    background: transparent;
     margin-bottom: 15px;
 }
 
@@ -504,59 +486,115 @@ body {
 }
 
 #captureTarget th {
-    background: #e2e2cc;
+    background: rgba(0, 0, 0, 0.04);
     font-weight: 700;
     color: #1a1a1a;
-    font-size: 16px;
+    font-size: 17px;
     padding: 10px 4px;
     border-bottom: 1px solid #bbb;
     text-transform: uppercase;
     letter-spacing: 0.3px;
 }
 
-#captureTarget .sep-col { border-left: 1px solid rgba(0,0,0,0.25); }
+#captureTarget .sep-col {
+    border-left: 1px solid rgba(0, 0, 0, 0.25);
+}
 
 #captureTarget .row-moving td {
     color: #e60000;
     font-weight: 700;
 }
 
-#captureTarget .marker-the { color: #1a1a1a; font-weight: 700; font-size: 17px; }
-#captureTarget .marker-ung { color: #1a1a1a; font-weight: 700; font-size: 17px; }
-#captureTarget .row-moving .marker-the { color: #e60000; }
-#captureTarget .row-moving .marker-ung { color: #e60000; }
+#captureTarget .marker-the {
+    color: #1a1a1a;
+    font-weight: 700;
+    font-size: 18px;
+}
 
-#captureTarget .phuc-than { font-size: 17px; color: #1a1a1a; font-weight: normal; }
-#captureTarget .row-moving .phuc-than { color: #e60000; font-weight: 700; }
+#captureTarget .marker-ung {
+    color: #1a1a1a;
+    font-weight: 700;
+    font-size: 18px;
+}
+
+#captureTarget .row-moving .marker-the {
+    color: #e60000;
+}
+
+#captureTarget .row-moving .marker-ung {
+    color: #e60000;
+}
+
+#captureTarget .phuc-than {
+    font-size: 18px;
+    color: #1a1a1a;
+    font-weight: normal;
+}
+
+#captureTarget .row-moving .phuc-than {
+    color: #e60000;
+    font-weight: 700;
+}
 
 #captureTarget .shensha-section {
     margin-top: 10px;
-    border-top: 2px solid #888;
-    padding-top: 10px;
+    border-top: 2px solid #c0c0c0;
+    padding-top: 12px;
 }
 
 #captureTarget .shensha-title {
     font-weight: 700;
-    font-size: 17px;
-    margin-bottom: 10px;
+    font-size: 19px;
+    margin-bottom: 12px;
     color: #1a1a1a;
     text-transform: uppercase;
+    text-align: center;
+    letter-spacing: 1px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid #d0c8b8;
 }
 
 #captureTarget .shensha-grid {
     display: grid;
     grid-template-columns: repeat(4, 1fr);
-    gap: 5px 12px;
+    gap: 8px;
 }
 
 #captureTarget .ss-item {
-    font-size: 17px;
-    padding: 4px 0;
-    border-bottom: 1px solid #d0c8b8;
+    font-size: 18px;
+    padding: 8px 10px;
+    border: 1px solid #d0c8b8;
+    border-radius: 6px;
     color: #1a1a1a;
+    background: rgba(0, 0, 0, 0.02);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    gap: 2px;
 }
 
-#captureTarget .ss-item strong { color: #1a1a1a; }
+#captureTarget .ss-item strong {
+    color: #1a1a1a;
+    font-size: 18px;
+    display: block;
+}
+
+#captureTarget .ss-item .ss-value {
+    font-size: 18px;
+    font-weight: normal;
+    color: #333;
+}
+
+/* Highlight thần sát whose chi matches a moving line */
+#captureTarget .ss-item.ss-moving strong {
+    color: #e60000;
+}
+
+#captureTarget .ss-item.ss-moving .ss-value {
+    color: #e60000;
+    font-weight: normal;
+}
 
 /* ========================================
    LOADING OVERLAY
