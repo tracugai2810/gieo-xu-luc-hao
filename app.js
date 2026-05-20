@@ -668,8 +668,10 @@ function captureAndDisplayImage() {
         document.getElementById('loading-overlay').classList.remove('visible');
         document.getElementById('resultSection').classList.add('visible');
 
-        // Scroll to result
-        document.getElementById('resultSection').scrollIntoView({ behavior: 'smooth', block: 'start' });
+        // Scroll to download button
+        setTimeout(() => {
+            document.getElementById('downloadBtn').scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }, 100);
 
     }).catch(err => {
         console.error('html2canvas error:', err);
