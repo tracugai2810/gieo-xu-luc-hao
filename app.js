@@ -554,8 +554,7 @@ function renderCaptureHTML(data) {
         <div class="info-header">
             <div class="info-content">
                 <div class="info-line"><strong>Ngày giờ:</strong> ${data.formattedDate} &nbsp;&nbsp;&nbsp;&nbsp; <strong>Phương pháp:</strong> ${methodText}</div>
-                <div class="info-line"><strong>Can chi:</strong> ${dateInfo.fullCanChi}</div>
-                <div class="info-line"><strong>Tiết khí:</strong> ${dateInfo.tietKhi} &nbsp;&nbsp;&nbsp;&nbsp; <strong>Tuần Không:</strong> <span class="highlight">${dateInfo.tuanKhong}</span></div>
+                <div class="info-line"><strong>Can chi:</strong> ${dateInfo.fullCanChi} &nbsp;&nbsp;&nbsp;&nbsp; <strong>Tuần Không:</strong> <span class="highlight">${dateInfo.tuanKhong}</span></div>
                 <div class="info-line"><strong>Nhật Thần:</strong> <span class="highlight">${dateInfo.nhatThan}</span> &nbsp;&nbsp;&nbsp;&nbsp; <strong>Nguyệt Lệnh:</strong> <span class="highlight">${dateInfo.nguyetLenh}</span></div>
             </div>
 
