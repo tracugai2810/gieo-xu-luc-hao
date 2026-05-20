@@ -305,13 +305,15 @@ body {
 .btn-primary:active { transform: translateY(0); }
 
 .btn-download {
-    background: linear-gradient(135deg, #059669, #047857);
+    background: linear-gradient(135deg, var(--accent-dark), #78350f);
     color: white;
+    border: 1px solid var(--accent);
 }
 
 .btn-download:hover {
-    background: linear-gradient(135deg, #10b981, #059669);
+    background: linear-gradient(135deg, var(--accent), var(--accent-dark));
     transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(217,119,6,0.3);
 }
 
 /* ========================================

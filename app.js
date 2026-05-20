@@ -545,8 +545,6 @@ function renderCaptureHTML(data) {
             <td>${line.changed.branch}-${line.changed.hanh}</td>
             <td>${line.lucThu}</td>
             <td>${isCTK}</td>
-            <td>${line.tsNgay}</td>
-            <td>${line.tsThang}</td>
         </tr>`;
     }
 
@@ -599,8 +597,6 @@ function renderCaptureHTML(data) {
                     <th>Can Chi</th>
                     <th>Lục Thú</th>
                     <th>TK</th>
-                    <th>TS Ngày</th>
-                    <th>TS Tháng</th>
                 </tr>
             </thead>
             <tbody>${rowsHtml}</tbody>
