@@ -5,21 +5,21 @@
 
 /* --- CSS Variables --- */
 :root {
-    /* Primary Colors - Deep Mystical Purple */
-    --primary-dark: #1a0b2e;
-    --primary: #3b1d5c;
-    --primary-light: #5c2d91;
+    /* Primary Colors - Deep Red/Wine */
+    --primary-dark: #6b1a1a;
+    --primary: #8b2525;
+    --primary-light: #b93333;
 
-    /* Accent Colors - Glowing Gold/Amber */
-    --accent-dark: #b8860b;
-    --accent: #ffd700;
-    --accent-light: #ffea70;
+    /* Accent Colors - Golden/Amber */
+    --accent-dark: #b45309;
+    --accent: #d97706;
+    --accent-light: #f59e0b;
 
-    /* Background - Deep Indigo/Black */
-    --bg-main: #0a0514;
-    --bg-secondary: #130a24;
-    --bg-card: #1c1033;
-    --bg-card-hover: #261745;
+    /* Background - Dark Blue-Gray */
+    --bg-main: #0c1222;
+    --bg-secondary: #151d30;
+    --bg-card: #1a2438;
+    --bg-card-hover: #243352;
 
     /* Text Colors */
     --text-primary: #f8f5fc;
@@ -89,50 +89,30 @@ body {
     min-height: 100vh;
 }
 
-/* --- Header --- */
-.app-header {
-    background: linear-gradient(135deg, var(--primary-dark) 0%, var(--primary) 50%, var(--primary-dark) 100%);
-    border-radius: var(--radius-md);
-    padding: 8px 16px;
-    margin-bottom: 10px;
-    box-shadow: var(--shadow-md), inset 0 1px 0 rgba(255, 255, 255, 0.1);
-    border: 1px solid rgba(255, 255, 255, 0.08);
-    position: relative;
-    overflow: hidden;
+/* --- Elegant Title --- */
+.elegant-title {
+    text-align: center;
+    margin-bottom: var(--spacing-xl);
+    padding: var(--spacing-lg) 0;
 }
 
-.app-header::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    height: 1px;
-    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
-}
-
-.header-content {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
-}
-
-.logo {
-    font-size: 1.2rem;
-    filter: drop-shadow(0 0 10px rgba(251, 191, 36, 0.5));
-}
-
-.app-header h1 {
-    font-size: 1.1rem;
+.elegant-title h1 {
+    font-size: 2.5rem;
     font-weight: 700;
     text-transform: uppercase;
-    letter-spacing: 1.5px;
+    letter-spacing: 2px;
     background: linear-gradient(135deg, #fef3c7 0%, var(--accent-light) 50%, #fbbf24 100%);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
-    text-shadow: 0 2px 15px rgba(251, 191, 36, 0.3);
+    text-shadow: 0 4px 15px rgba(251, 191, 36, 0.4);
+    margin-bottom: var(--spacing-xs);
+}
+
+.elegant-title p {
+    font-size: 1.1rem;
+    color: var(--text-secondary);
+    font-style: italic;
 }
 
 /* --- Main Content --- */

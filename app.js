@@ -319,7 +319,8 @@ function calculateCanChi(dateInput) {
 // APP STATE & UI
 // ============================================
 
-// Tab state removed, only coins is used.function init() {
+// Tab state removed, only coins is used.
+function init() {
     // Load Vietnamese Calligraphy Font dynamically
     if (!document.getElementById('charm-font-link')) {
         const link = document.createElement('link');
@@ -947,16 +948,6 @@ function generateCopyText(data) {
 }
 
 function copyToClipboard() {
-    if (currentTab === 'tuvi') {
-        if (!currentTuViData) {
-            alert("Vui lòng lập lá số trước!");
-            return;
-        }
-        const text = generateTuViText(currentTuViData);
-        copyTextToClipboard(text);
-        return;
-    }
-
     if (!currentHexData) {
         alert("Vui lòng lập quẻ trước!");
         return;
@@ -1350,12 +1341,12 @@ function performToss() {
         coins.forEach((coin, index) => {
             coin.classList.remove('tossing');
 
-            // Animation ends at 2160deg (6 full spins)
-            // If Result is Yang (Front): 2160deg
-            // If Result is Yin (Back): 2160 + 180 = 2340deg
+            // Animation ends at 2160deg (6 full spins) + bounce
+            // Let's do a Y-axis flip (more dynamic)
             const isYang = coinResults[index];
-            const finalAngle = 2160 + (isYang ? 0 : 180);
-            coin.style.transform = `rotateX(${finalAngle}deg)`;
+            const finalAngleX = 1440; // 4 spins
+            const finalAngleY = 1800 + (isYang ? 0 : 180); // 5 spins + face
+            coin.style.transform = `rotateX(${finalAngleX}deg) rotateY(${finalAngleY}deg) scale(1)`;
         });
 
         // Update Results UI
