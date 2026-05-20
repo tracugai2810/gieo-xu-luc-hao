@@ -434,7 +434,7 @@ body {
 #captureTarget .hex-title {
     font-size: 19px;
     font-weight: 700;
-    color: #c41e3a;
+    color: #a31ea6;
     text-transform: uppercase;
     margin-bottom: 15px;
     letter-spacing: 1px;
@@ -462,7 +462,7 @@ body {
     width: 100%;
 }
 
-#captureTarget .yang { background-color: #2059a6; }
+#captureTarget .yang { background-color: #1a1a1a; }
 
 #captureTarget .yin {
     display: flex;
@@ -474,7 +474,7 @@ body {
     content: '';
     display: block;
     width: 42%;
-    background-color: #2059a6;
+    background-color: #1a1a1a;
     height: 100%;
 }
 
