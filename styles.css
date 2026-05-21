@@ -783,11 +783,11 @@ body {
 .smoke-s {
     position: absolute;
     bottom: 0;
-    width: 30px;
-    height: 30px;
-    background: radial-gradient(circle, rgba(255, 255, 255, 0.25) 0%, rgba(255, 255, 255, 0) 70%);
+    width: 45px;
+    height: 45px;
+    background: radial-gradient(circle, rgba(255, 255, 255, 0.6) 0%, rgba(255, 255, 255, 0) 70%);
     border-radius: 50%;
-    filter: blur(6px);
+    filter: blur(8px);
     opacity: 0;
     animation: smoke-rise 4s linear infinite;
 }
@@ -799,9 +799,9 @@ body {
 
 @keyframes smoke-rise {
     0% { transform: translateY(0) scale(1); opacity: 0; }
-    20% { opacity: 0.5; }
-    70% { opacity: 0.2; }
-    100% { transform: translateY(-180px) scale(3.5); opacity: 0; }
+    20% { opacity: 0.85; }
+    70% { opacity: 0.4; }
+    100% { transform: translateY(-200px) scale(4); opacity: 0; }
 }
 
 .coin-container {
