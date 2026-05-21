@@ -1228,11 +1228,11 @@ function startCoinToss() {
     // Reset Coins Rotation
     coins.forEach(coin => {
         coin.classList.remove('tossing');
-        coin.style.transform = 'rotateX(0deg)';
+        coin.style.transform = 'rotateY(0deg)';
         const front = coin.querySelector('.front');
         const back = coin.querySelector('.back');
-        if (front) front.style.transform = 'rotateX(0deg)';
-        if (back) back.style.transform = 'rotateX(180deg)';
+        if (front) front.style.transform = 'rotateY(0deg)';
+        if (back) back.style.transform = 'rotateY(180deg)';
     });
 
     // Show Modal
@@ -1317,10 +1317,10 @@ function performToss() {
         coins.forEach((coin, index) => {
             coin.classList.remove('tossing');
 
-            // Animation ends at rotateX(3960deg) = 11 full spins
+            // Animation ends at rotateY(3600deg) = 10 full spins
             const isYang = coinResults[index];
-            const finalAngle = 3960 + (isYang ? 0 : 180);
-            coin.style.transform = `rotateX(${finalAngle}deg)`;
+            const finalAngle = 3600 + (isYang ? 0 : 180);
+            coin.style.transform = `rotateY(${finalAngle}deg)`;
         });
 
         // Update Results UI with visual hexagram line
@@ -1343,7 +1343,7 @@ function performToss() {
             document.getElementById('toss-status').innerText = 'Đã gieo xong 6 hào!';
         }
 
-    }, 2200);
+    }, 2000);
 }
 
 function addResultToStack(index, text, symbol, isMoving, isYang) {
