@@ -631,6 +631,7 @@ function renderCaptureHTML(data) {
                 })()}
             </div>
         </div>
+        <div class="watermark">Link gieo quẻ: gieoque.id.vn</div>
     `;
 }
 

@@ -395,6 +395,80 @@ body {
     justify-content: center;
     align-items: flex-start;
     gap: 40px;
+#captureArea {
+    position: absolute;
+    left: -9999px;
+    top: 0;
+}
+
+#captureTarget {
+    width: 1000px;
+    background-color: #fefee5;
+    padding: 20px;
+    font-family: 'Inter', sans-serif;
+    font-size: 17px;
+    color: #000000;
+}
+
+/* --- Capture Target Styles (Light Theme for Export Image) --- */
+#captureTarget .info-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: #fefee5;
+    border-bottom: 2px solid #888;
+    padding: 5px 10px;
+    margin-bottom: 10px;
+    min-height: 110px;
+}
+
+#captureTarget .info-content {
+    flex: 1;
+}
+
+#captureTarget .info-line {
+    margin-bottom: 6px;
+    line-height: 1.7;
+    color: #000000;
+    font-size: 17px;
+}
+
+#captureTarget .info-line:last-child {
+    margin-bottom: 0;
+}
+
+#captureTarget .info-line strong {
+    color: #000000;
+}
+
+#captureTarget .info-icon {
+    width: 110px;
+    height: 110px;
+    margin-left: 0;
+    margin-right: -10px;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+#captureTarget .info-icon img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    opacity: 0.9;
+}
+
+#captureTarget .highlight {
+    color: #e60000;
+    font-weight: 700;
+}
+
+#captureTarget .hex-visual-section {
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    gap: 40px;
     padding: 20px 0;
     border-bottom: 2px solid #888;
     margin-bottom: 10px;
@@ -408,6 +482,7 @@ body {
     min-width: 100px;
     padding: 0 10px;
     gap: 4px;
+    align-self: center;
 }
 
 #captureTarget .hex-ngam-indicator span {
@@ -597,6 +672,15 @@ body {
 
 #captureTarget .ss-item strong {
     color: #1a1a1a;
+}
+
+#captureTarget .watermark {
+    text-align: right;
+    font-size: 16px;
+    font-weight: 600;
+    color: #555;
+    margin-top: 15px;
+    font-style: italic;
 }
 
 /* ========================================
