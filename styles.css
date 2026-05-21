@@ -765,6 +765,43 @@ body {
     min-height: 200px;
     width: 100%;
     perspective: 1200px;
+    position: relative;
+}
+
+/* --- Smoke Effect --- */
+.smoke-container {
+    position: absolute;
+    bottom: -10px;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    justify-content: center;
+    pointer-events: none;
+    z-index: 0;
+}
+
+.smoke-s {
+    position: absolute;
+    bottom: 0;
+    width: 30px;
+    height: 30px;
+    background: radial-gradient(circle, rgba(255, 255, 255, 0.25) 0%, rgba(255, 255, 255, 0) 70%);
+    border-radius: 50%;
+    filter: blur(6px);
+    opacity: 0;
+    animation: smoke-rise 4s linear infinite;
+}
+
+.smoke-s:nth-child(1) { left: 42%; animation-duration: 5s; animation-delay: 0s; }
+.smoke-s:nth-child(2) { left: 50%; animation-duration: 4.5s; animation-delay: 1.2s; }
+.smoke-s:nth-child(3) { left: 55%; animation-duration: 6s; animation-delay: 2.5s; }
+.smoke-s:nth-child(4) { left: 47%; animation-duration: 5.5s; animation-delay: 3.8s; }
+
+@keyframes smoke-rise {
+    0% { transform: translateY(0) scale(1); opacity: 0; }
+    20% { opacity: 0.5; }
+    70% { opacity: 0.2; }
+    100% { transform: translateY(-180px) scale(3.5); opacity: 0; }
 }
 
 .coin-container {
@@ -772,6 +809,8 @@ body {
     justify-content: center;
     gap: 20px;
     align-items: center;
+    position: relative;
+    z-index: 1;
 }
 
 .coin-wrapper {
