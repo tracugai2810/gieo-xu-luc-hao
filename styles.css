@@ -783,19 +783,25 @@ body {
 .smoke-s {
     position: absolute;
     bottom: 0;
-    width: 45px;
-    height: 45px;
-    background: radial-gradient(circle, rgba(255, 255, 255, 0.5) 0%, rgba(255, 255, 255, 0) 70%);
+    width: 60px;
+    height: 60px;
+    background: radial-gradient(circle, rgba(255, 255, 255, 0.7) 0%, rgba(255, 255, 255, 0) 70%);
     border-radius: 50%;
-    filter: blur(8px);
+    filter: blur(10px);
     opacity: 0;
     animation: smoke-rise 5s ease-in infinite;
 }
 
-.smoke-s:nth-child(1) { left: 42%; animation-duration: 5s; animation-delay: 0s; }
-.smoke-s:nth-child(2) { left: 50%; animation-duration: 4.5s; animation-delay: 1.2s; animation-name: smoke-rise-alt; }
-.smoke-s:nth-child(3) { left: 55%; animation-duration: 6s; animation-delay: 2.5s; }
-.smoke-s:nth-child(4) { left: 47%; animation-duration: 5.5s; animation-delay: 3.8s; animation-name: smoke-rise-alt; }
+.smoke-s:nth-child(1) { left: 25%; animation-duration: 4.5s; animation-delay: 0s; width: 80px; height: 80px; }
+.smoke-s:nth-child(2) { left: 35%; animation-duration: 5s; animation-delay: 0.5s; animation-name: smoke-rise-alt; }
+.smoke-s:nth-child(3) { left: 45%; animation-duration: 4s; animation-delay: 1s; width: 90px; height: 90px; }
+.smoke-s:nth-child(4) { left: 55%; animation-duration: 5.5s; animation-delay: 1.5s; animation-name: smoke-rise-alt; }
+.smoke-s:nth-child(5) { left: 65%; animation-duration: 4.2s; animation-delay: 2s; width: 75px; height: 75px; }
+.smoke-s:nth-child(6) { left: 75%; animation-duration: 5s; animation-delay: 2.5s; animation-name: smoke-rise-alt; }
+.smoke-s:nth-child(7) { left: 30%; animation-duration: 4.8s; animation-delay: 3s; width: 100px; height: 100px; }
+.smoke-s:nth-child(8) { left: 50%; animation-duration: 5.2s; animation-delay: 3.5s; animation-name: smoke-rise-alt; }
+.smoke-s:nth-child(9) { left: 70%; animation-duration: 4.5s; animation-delay: 4s; width: 85px; height: 85px; }
+.smoke-s:nth-child(10) { left: 40%; animation-duration: 5.5s; animation-delay: 4.5s; animation-name: smoke-rise-alt; }
 
 @keyframes smoke-rise {
     0% { transform: translate(0, 0) scale(1); opacity: 0; }
