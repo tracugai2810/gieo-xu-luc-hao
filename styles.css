@@ -763,8 +763,6 @@ body {
 .coin-wrapper {
     width: 80px;
     height: 80px;
-    border-radius: 50%;
-    overflow: hidden;
 }
 
 .coin {
@@ -781,9 +779,10 @@ body {
     height: 100%;
     backface-visibility: hidden;
     border-radius: 50%;
-    background-size: 105%;
+    background-size: cover;
     background-position: center;
-    box-shadow: 0 4px 15px rgba(0,0,0,0.6);
+    box-shadow: 0 4px 15px rgba(0,0,0,0.6), inset 0 0 8px rgba(255,215,0,0.2);
+    border: 2px solid #d4af37;
 }
 
 .coin-face.front { transform: rotateX(0deg); }
