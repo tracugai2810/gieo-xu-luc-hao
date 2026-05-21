@@ -522,6 +522,17 @@ function renderCaptureHTML(data) {
         const isTK = line.isTK ? 'K' : '-';
         const isCTK = line.isCTK ? 'K' : '-';
 
+        // Changed part (Quẻ Biến)
+        let cRel = line.changed ? line.changed.relation : getRelation(line.hanh, data.palaceEl); // Default to main if not moving/changed logic handled in calc
+        // Actually, for static lines, the relation is same as main if we consider it doesn't change. 
+        // But in the original code: 
+        // const cTriName = (i <= 3) ? QUAI_SO[cInIdx].name : QUAI_SO[cOutIdx].name;
+        // const cBranch = NAP_GIAP[cTriName][idx];
+        // const cEl = NGU_HANH_CHI[cBranch];
+        // const cRel = getRelation(cEl, palaceEl);
+        // This logic runs for ALL lines in original code.
+        // In my calc function I should preserve this.
+
         rowsHtml += `
         <tr class="${rowClass}">
             <td>${sym}</td>
@@ -534,6 +545,8 @@ function renderCaptureHTML(data) {
             <td>${line.changed.branch}-${line.changed.hanh}</td>
             <td>${line.lucThu}</td>
             <td>${isCTK}</td>
+            <td>${line.tsNgay}</td>
+            <td>${line.tsThang}</td>
         </tr>`;
     }
 
@@ -542,10 +555,12 @@ function renderCaptureHTML(data) {
     target.innerHTML = `
         <div class="info-header">
             <div class="info-content">
-                <div class="info-line"><strong>Ngày giờ:</strong> ${data.formattedDate} &nbsp;&nbsp;&nbsp;&nbsp; <strong>Phương pháp:</strong> <span class="highlight">${methodText}</span></div>
-                <div class="info-line"><strong>Can chi:</strong> ${dateInfo.fullCanChi} &nbsp;&nbsp;&nbsp;&nbsp; <strong>Tuần Không:</strong> <span class="highlight">${dateInfo.tuanKhong}</span></div>
+                <div class="info-line"><strong>Ngày giờ:</strong> ${data.formattedDate} &nbsp;&nbsp;&nbsp;&nbsp; <strong>Phương pháp:</strong> ${methodText}</div>
+                <div class="info-line"><strong>Can chi:</strong> ${dateInfo.fullCanChi}</div>
+                <div class="info-line"><strong>Tiết khí:</strong> ${dateInfo.tietKhi} &nbsp;&nbsp;&nbsp;&nbsp; <strong>Tuần Không:</strong> <span class="highlight">${dateInfo.tuanKhong}</span></div>
                 <div class="info-line"><strong>Nhật Thần:</strong> <span class="highlight">${dateInfo.nhatThan}</span> &nbsp;&nbsp;&nbsp;&nbsp; <strong>Nguyệt Lệnh:</strong> <span class="highlight">${dateInfo.nguyetLenh}</span></div>
             </div>
+
         </div>
         
         <div class="hex-visual-section">
@@ -554,11 +569,21 @@ function renderCaptureHTML(data) {
                 ${renderHexVisual(data.lines, false)}
                 <div class="hex-family">Họ ${palaceName}${mainAttr ? ' - ' + mainAttr : ''}</div>
             </div>
+            ${data.hoData ? `
+            <div class="hex-box hex-box-ho">
+                <div class="hex-title">${data.hoData.name}</div>
+                ${renderHexVisual(data.hoData.lines, false)}
+                <div class="hex-family">Họ ${data.hoData.palaceName}${data.hoData.attr ? ' - ' + data.hoData.attr : ''}</div>
+                ${data.ngamResult.length > 0 ? `<div class="hex-ngam-inline">${data.ngamResult.join(', ')}</div>` : ''}
+            </div>` : `
+            <div class="hex-ngam-indicator">${data.ngamResult.length > 0 ? data.ngamResult.map(t => `<span>${t}</span>`).join('') : ''}</div>
+            `}
             <div class="hex-box">
                 <div class="hex-title">${changedName}</div>
                 ${renderHexVisual(data.lines, true)}
                 <div class="hex-family">Họ ${changedPalaceName}${changedAttr ? ' - ' + changedAttr : ''}</div>
             </div>
+        </div>
         </div>
 
         <table>
@@ -574,6 +599,8 @@ function renderCaptureHTML(data) {
                     <th>Can Chi</th>
                     <th>Lục Thú</th>
                     <th>TK</th>
+                    <th>TS Ngày</th>
+                    <th>TS Tháng</th>
                 </tr>
             </thead>
             <tbody>${rowsHtml}</tbody>
@@ -583,24 +610,25 @@ function renderCaptureHTML(data) {
             <div class="shensha-title">Thần Sát</div>
             <div class="shensha-grid">
                 ${(() => {
-            const movingChiSet = new Set();
-            linesData.forEach(line => {
-                if (line.isMoving) {
-                    movingChiSet.add(line.chi);
-                    movingChiSet.add(line.changed.branch);
-                }
-            });
-            return shensha.map(s => {
-                const nameMatch = s.match(/<strong>(.*?):<\/strong>\s*(.*)/);
-                if (!nameMatch) return `<div class="ss-item">${s}</div>`;
-                const name = nameMatch[1];
-                const value = nameMatch[2] || '-';
-                const chiValues = value.split(',').map(v => v.trim());
-                const hasMovingChi = chiValues.some(chi => movingChiSet.has(chi));
-                const movingClass = hasMovingChi ? ' ss-moving' : '';
-                return `<div class="ss-item${movingClass}"><strong>${name}</strong><span class="ss-value">${value}</span></div>`;
-            }).join('');
-        })()}
+                    const movingBranches = data.linesData.filter(l => l.isMoving).flatMap(l => [l.chi, l.changed.branch]);
+                    return shensha.map(s => {
+                        let parts = s.split('</strong> ');
+                        if (parts.length > 1) {
+                            let values = parts[1];
+                            let hasMoving = false;
+                            movingBranches.forEach(b => {
+                                if (values.includes(b)) hasMoving = true;
+                                values = values.split(b).join(`<span style="color: red; font-weight: bold;">${b}</span>`);
+                            });
+                            let title = parts[0];
+                            if (hasMoving) {
+                                title = title.replace('<strong>', '<strong style="color: red;">');
+                            }
+                            return `<div class="ss-item">${title}</strong> ${values}</div>`;
+                        }
+                        return `<div class="ss-item">${s}</div>`;
+                    }).join('');
+                })()}
             </div>
         </div>
     `;

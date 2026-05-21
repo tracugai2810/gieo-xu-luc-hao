@@ -329,34 +329,11 @@ body {
 
 #captureTarget {
     width: 1000px;
-    background-color: #f6f5f1;
+    background-color: #fefee5;
     padding: 20px;
     font-family: 'Inter', sans-serif;
-    font-size: 18px;
-    color: #1a1a1a;
-    position: relative;
-}
-
-#captureTarget::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background-image:
-        radial-gradient(circle at 15% 25%, rgba(32, 89, 166, 0.04) 0%, transparent 50%),
-        radial-gradient(circle at 85% 75%, rgba(32, 89, 166, 0.04) 0%, transparent 50%),
-        radial-gradient(circle at 50% 50%, rgba(32, 89, 166, 0.02) 0%, transparent 70%),
-        repeating-linear-gradient(45deg, transparent 0px, transparent 30px, rgba(32, 89, 166, 0.015) 30px, rgba(32, 89, 166, 0.015) 31px),
-        repeating-linear-gradient(-45deg, transparent 0px, transparent 30px, rgba(32, 89, 166, 0.015) 30px, rgba(32, 89, 166, 0.015) 31px);
-    pointer-events: none;
-    z-index: 0;
-}
-
-#captureTarget>* {
-    position: relative;
-    z-index: 1;
+    font-size: 17px;
+    color: #000000;
 }
 
 /* --- Capture Target Styles (Light Theme for Export Image) --- */
@@ -364,8 +341,8 @@ body {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    background: transparent;
-    border-bottom: 2px solid #c0c0c0;
+    background: #fefee5;
+    border-bottom: 2px solid #888;
     padding: 5px 10px;
     margin-bottom: 10px;
     min-height: 110px;
@@ -379,7 +356,7 @@ body {
     margin-bottom: 6px;
     line-height: 1.7;
     color: #000000;
-    font-size: 18px;
+    font-size: 17px;
 }
 
 #captureTarget .info-line:last-child {
@@ -390,6 +367,24 @@ body {
     color: #000000;
 }
 
+#captureTarget .info-icon {
+    width: 110px;
+    height: 110px;
+    margin-left: 0;
+    margin-right: -10px;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+#captureTarget .info-icon img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    opacity: 0.9;
+}
+
 #captureTarget .highlight {
     color: #e60000;
     font-weight: 700;
@@ -398,10 +393,42 @@ body {
 #captureTarget .hex-visual-section {
     display: flex;
     justify-content: center;
-    gap: 120px;
+    align-items: flex-start;
+    gap: 40px;
     padding: 20px 0;
     border-bottom: 2px solid #888;
     margin-bottom: 10px;
+}
+
+#captureTarget .hex-ngam-indicator {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-width: 100px;
+    padding: 0 10px;
+    gap: 4px;
+}
+
+#captureTarget .hex-ngam-indicator span {
+    color: #000; /* Black as requested */
+    font-weight: 700;
+    font-size: 17px;
+    text-align: center;
+    white-space: nowrap;
+    text-transform: uppercase;
+    line-height: 1.4;
+}
+
+#captureTarget .hex-ngam-inline {
+    margin-top: 5px;
+    font-size: 15px;
+    color: #000; /* Black as requested */
+    font-weight: normal;
+}
+
+#captureTarget .hex-ngam-indicator:empty {
+    display: none;
 }
 
 #captureTarget .hex-box {
@@ -409,8 +436,13 @@ body {
     min-width: 180px;
 }
 
+#captureTarget .hex-box-ho {
+    text-align: center;
+    min-width: 180px;
+}
+
 #captureTarget .hex-title {
-    font-size: 20px;
+    font-size: 19px;
     font-weight: 700;
     color: #c41e3a;
     text-transform: uppercase;
@@ -419,7 +451,7 @@ body {
 }
 
 #captureTarget .hex-family {
-    font-size: 18px;
+    font-size: 17px;
     color: #333;
     font-weight: 600;
     margin-top: 12px;
@@ -441,7 +473,7 @@ body {
 }
 
 #captureTarget .yang {
-    background-color: #2059a6;
+    background-color: #1a1a1a;
 }
 
 #captureTarget .yin {
@@ -454,7 +486,7 @@ body {
     content: '';
     display: block;
     width: 42%;
-    background-color: #2059a6;
+    background-color: #1a1a1a;
     height: 100%;
 }
 
@@ -470,8 +502,8 @@ body {
 #captureTarget table {
     width: 100%;
     border-collapse: collapse;
-    font-size: 18px;
-    background: transparent;
+    font-size: 17px;
+    background: #fefee5;
     margin-bottom: 15px;
 }
 
@@ -486,10 +518,10 @@ body {
 }
 
 #captureTarget th {
-    background: rgba(0, 0, 0, 0.04);
+    background: #e2e2cc;
     font-weight: 700;
     color: #1a1a1a;
-    font-size: 17px;
+    font-size: 16px;
     padding: 10px 4px;
     border-bottom: 1px solid #bbb;
     text-transform: uppercase;
@@ -508,13 +540,13 @@ body {
 #captureTarget .marker-the {
     color: #1a1a1a;
     font-weight: 700;
-    font-size: 18px;
+    font-size: 17px;
 }
 
 #captureTarget .marker-ung {
     color: #1a1a1a;
     font-weight: 700;
-    font-size: 18px;
+    font-size: 17px;
 }
 
 #captureTarget .row-moving .marker-the {
@@ -526,7 +558,7 @@ body {
 }
 
 #captureTarget .phuc-than {
-    font-size: 18px;
+    font-size: 17px;
     color: #1a1a1a;
     font-weight: normal;
 }
@@ -538,62 +570,33 @@ body {
 
 #captureTarget .shensha-section {
     margin-top: 10px;
-    border-top: 2px solid #c0c0c0;
-    padding-top: 12px;
+    border-top: 2px solid #888;
+    padding-top: 10px;
 }
 
 #captureTarget .shensha-title {
     font-weight: 700;
-    font-size: 19px;
-    margin-bottom: 12px;
+    font-size: 17px;
+    margin-bottom: 10px;
     color: #1a1a1a;
     text-transform: uppercase;
-    text-align: center;
-    letter-spacing: 1px;
-    padding-bottom: 8px;
-    border-bottom: 1px solid #d0c8b8;
 }
 
 #captureTarget .shensha-grid {
     display: grid;
     grid-template-columns: repeat(4, 1fr);
-    gap: 8px;
+    gap: 5px 12px;
 }
 
 #captureTarget .ss-item {
-    font-size: 18px;
-    padding: 8px 10px;
-    border: 1px solid #d0c8b8;
-    border-radius: 6px;
+    font-size: 17px;
+    padding: 4px 0;
+    border-bottom: 1px solid #d0c8b8;
     color: #1a1a1a;
-    background: rgba(0, 0, 0, 0.02);
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    text-align: center;
-    gap: 2px;
 }
 
 #captureTarget .ss-item strong {
     color: #1a1a1a;
-    font-size: 18px;
-    display: block;
-}
-
-#captureTarget .ss-item .ss-value {
-    font-size: 18px;
-    font-weight: normal;
-    color: #333;
-}
-
-/* Highlight thần sát whose chi matches a moving line */
-#captureTarget .ss-item.ss-moving strong {
-    color: #e60000;
-}
-
-#captureTarget .ss-item.ss-moving .ss-value {
-    color: #e60000;
-    font-weight: normal;
 }
 
 /* ========================================
