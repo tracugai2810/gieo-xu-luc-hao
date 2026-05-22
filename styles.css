@@ -1027,3 +1027,36 @@ body {
     .cta-coin-icon { width: 34px; height: 34px; }
     .coin-wrapper { width: 65px; height: 65px; }
 }
+
+/* ========================================
+   SEO CONTENT SECTION
+   ======================================== */
+.seo-content-section {
+    margin-top: 32px;
+    padding: 24px;
+    background: var(--bg-card);
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--border-color);
+}
+
+.seo-content-section h2 {
+    font-size: 1.2rem;
+    color: var(--accent-light);
+    margin-bottom: 12px;
+}
+
+.seo-content-section p {
+    font-size: 0.95rem;
+    color: var(--text-secondary);
+    line-height: 1.6;
+    margin-bottom: 12px;
+}
+
+.seo-content-section p:last-child {
+    margin-bottom: 0;
+}
+
+.seo-note {
+    font-style: italic;
+    color: var(--text-muted);
+}
