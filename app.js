@@ -647,6 +647,24 @@ function captureAndDisplayImage() {
     captureArea.style.zIndex = '-1';
     captureArea.style.opacity = '0.01';
 
+    if (typeof html2canvas === 'undefined') {
+        const script = document.createElement('script');
+        script.src = 'https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js';
+        script.onload = () => executeCapture(target, captureArea);
+        script.onerror = () => {
+            alert('Không thể tải thư viện tạo ảnh. Vui lòng thử lại!');
+            document.getElementById('loading-overlay').classList.remove('visible');
+            captureArea.style.position = 'absolute';
+            captureArea.style.left = '-9999px';
+            captureArea.style.opacity = '1';
+        };
+        document.body.appendChild(script);
+    } else {
+        executeCapture(target, captureArea);
+    }
+}
+
+function executeCapture(target, captureArea) {
     html2canvas(target, {
         scale: 1.5,
         useCORS: true,
