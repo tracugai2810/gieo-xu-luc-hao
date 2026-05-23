@@ -557,7 +557,7 @@ function renderCaptureHTML(data) {
             <div class="info-content">
                 <div class="info-line"><strong>Ngày giờ:</strong> ${data.formattedDate} &nbsp;&nbsp;&nbsp;&nbsp; <strong>Phương pháp:</strong> ${methodText}</div>
                 <div class="info-line"><strong>Can chi:</strong> ${dateInfo.fullCanChi}</div>
-                <div class="info-line"><strong>Tiết khí:</strong> ${dateInfo.tietKhi} &nbsp;&nbsp;&nbsp;&nbsp; <strong>Tuần Không:</strong> <span class="highlight">${dateInfo.tuanKhong}</span></div>
+                <div class="info-line"><strong>Hào tâm:</strong> ${dateInfo.haoTamText || ''} &nbsp;&nbsp;&nbsp;&nbsp; <strong>Tuần Không:</strong> <span class="highlight">${dateInfo.tuanKhong}</span></div>
                 <div class="info-line"><strong>Nhật Thần:</strong> <span class="highlight">${dateInfo.nhatThan}</span> &nbsp;&nbsp;&nbsp;&nbsp; <strong>Nguyệt Lệnh:</strong> <span class="highlight">${dateInfo.nguyetLenh}</span></div>
             </div>
 
@@ -611,7 +611,7 @@ function renderCaptureHTML(data) {
             <div class="shensha-grid">
                 ${(() => {
                     const movingBranches = data.linesData.filter(l => l.isMoving).flatMap(l => [l.chi, l.changed.branch]);
-                    return shensha.map(s => {
+                    let itemsHtml = shensha.map(s => {
                         let parts = s.split('</strong> ');
                         if (parts.length > 1) {
                             let values = parts[1];
@@ -628,10 +628,12 @@ function renderCaptureHTML(data) {
                         }
                         return `<div class="ss-item">${s}</div>`;
                     }).join('');
+                    
+                    itemsHtml += `<div class="ss-item" style="grid-column: 3 / span 2; text-align: right; font-style: italic; color: #666; align-self: center;">Link gieo quẻ: gieoque.id.vn</div>`;
+                    return itemsHtml;
                 })()}
             </div>
         </div>
-        <div class="watermark">Link gieo quẻ: gieoque.id.vn</div>
     `;
 }
 
@@ -866,6 +868,56 @@ function calculateHexagramData(lines, cal, methodText, formattedDate, isMaiHoa) 
         }
     }
 
+    // --- LOGIC TÍNH HÀO TÂM NIỆM ---
+    let haoTamObj = null;
+    const shiIndex = linesData.findIndex(l => l.isShi);
+    if (shiIndex !== -1) {
+        const shiLine = linesData[shiIndex];
+        
+        const getTangHao = (idx) => {
+            const pureTri = QUAI_SO[info.p].name;
+            const pureBranch = NAP_GIAP[pureTri][idx];
+            const pureEl = NGU_HANH_CHI[pureBranch];
+            const pureRel = getRelation(pureEl, palaceEl);
+            return { rel: pureRel, branch: pureBranch };
+        };
+
+        if (!shiLine.isMoving) {
+            if (shiLine.changed.relation !== shiLine.relation) {
+                haoTamObj = { rel: shiLine.changed.relation, branch: shiLine.changed.branch };
+            }
+        }
+
+        if (!haoTamObj) {
+            const tangHaoThe = getTangHao(shiIndex);
+            if (tangHaoThe.rel !== shiLine.relation) {
+                haoTamObj = tangHaoThe;
+            } else {
+                const hao5 = linesData[4];
+                if (hao5 && !hao5.isMoving) {
+                    if (hao5.relation !== shiLine.relation) {
+                        haoTamObj = { rel: hao5.relation, branch: hao5.chi };
+                    }
+                } else if (hao5 && hao5.isMoving) {
+                    const tangHao5 = getTangHao(4);
+                    if (tangHao5.rel !== shiLine.relation) {
+                        haoTamObj = tangHao5;
+                    }
+                }
+            }
+        }
+    }
+
+    let haoTamText = "";
+    if (haoTamObj) {
+        const relMap = {
+            'Tử Tôn': 'Tử', 'Thê Tài': 'Tài', 'Quan Quỷ': 'Quan',
+            'Huynh Đệ': 'Huynh', 'Phụ Mẫu': 'Phụ'
+        };
+        const relShort = relMap[haoTamObj.rel] || haoTamObj.rel;
+        haoTamText = `<span class="highlight">${relShort} - ${haoTamObj.branch}</span>`;
+    }
+
     const shensha = calculateShenSha(cal.ngay.can, cal.ngay.chi, cal.thang.chi);
 
     return {
@@ -888,6 +940,7 @@ function calculateHexagramData(lines, cal, methodText, formattedDate, isMaiHoa) 
         dateInfo: {
             fullCanChi: `Giờ ${cal.gio.can} ${cal.gio.chi}, Ngày ${cal.ngay.can} ${cal.ngay.chi}`,
             tietKhi: cal.tietKhi,
+            haoTamText: haoTamText,
             tuanKhong: cal.tuanKhong.join(', '),
             nhatThan: `${cal.ngay.chi} - ${cal.ngay.hanh}`,
             nguyetLenh: `${cal.thang.chi} - ${cal.thang.hanh}`,
