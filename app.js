@@ -1095,6 +1095,13 @@ async function copyImageToClipboard() {
         return;
     }
 
+    var ua = navigator.userAgent || '';
+    var isInApp = /FBAN|FBAV|FB_IAB|Zalo|ZaloTheme|Instagram|Line|MicroMessenger|Snapchat|Twitter|TikTok/i.test(ua);
+    if (isInApp) {
+        showInAppGuide();
+        return;
+    }
+
     try {
         // Convert data URL to blob
         const response = await fetch(currentImageDataUrl);
@@ -1118,9 +1125,13 @@ async function copyImageToClipboard() {
         console.error('Copy image failed:', err);
         // Fallback: open image in new tab
         const newTab = window.open();
-        newTab.document.write(`<img src="${currentImageDataUrl}" style="max-width:100%">`);
-        newTab.document.title = "Nhấn Ctrl+A, Ctrl+C để sao chép";
-        showToast("Mở tab mới - nhấn Ctrl+A, Ctrl+C để sao chép");
+        if (newTab) {
+            newTab.document.write(`<img src="${currentImageDataUrl}" style="max-width:100%">`);
+            newTab.document.title = "Nhấn Ctrl+A, Ctrl+C để sao chép";
+            showToast("Mở tab mới - nhấn Ctrl+A, Ctrl+C để sao chép");
+        } else {
+            showToast("Trình duyệt chặn mở tab mới. Không thể sao chép.");
+        }
     }
 }
 
@@ -1154,6 +1165,13 @@ function showToast(message) {
 function downloadImage() {
     if (!currentImageDataUrl) {
         alert('Chưa có ảnh để tải!');
+        return;
+    }
+
+    var ua = navigator.userAgent || '';
+    var isInApp = /FBAN|FBAV|FB_IAB|Zalo|ZaloTheme|Instagram|Line|MicroMessenger|Snapchat|Twitter|TikTok/i.test(ua);
+    if (isInApp) {
+        showInAppGuide();
         return;
     }
 
@@ -1208,6 +1226,55 @@ function fallbackDownload(blob, filename) {
     link.click();
     document.body.removeChild(link);
     URL.revokeObjectURL(url);
+}
+
+function showInAppGuide() {
+    var existing = document.getElementById('inapp-guide-overlay');
+    if (existing) existing.remove();
+
+    var overlay = document.createElement('div');
+    overlay.id = 'inapp-guide-overlay';
+    overlay.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.95);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:99999;padding:15px;box-sizing:border-box;';
+
+    var hint = document.createElement('div');
+    hint.style.cssText = 'color:#4ecdc4;font-size:16px;font-weight:600;margin-bottom:16px;text-align:center;line-height:1.5;';
+    hint.innerHTML = 'Trình duyệt này chặn tải trực tiếp.<br>👇 Hãy <b>NHẤN GIỮ</b> vào ảnh dưới đây để Lưu hoặc Sao chép';
+
+    var imgContainer = document.createElement('div');
+    imgContainer.style.cssText = 'max-height:75vh; overflow-y:auto; border-radius:8px;';
+    
+    var img = document.createElement('img');
+    try {
+        var blob = dataURLtoBlobCustom(currentImageDataUrl);
+        img.src = URL.createObjectURL(blob);
+    } catch(e) {
+        img.src = currentImageDataUrl;
+    }
+    img.style.cssText = 'max-width:100%;height:auto;display:block;';
+    
+    imgContainer.appendChild(img);
+
+    var closeBtn = document.createElement('button');
+    closeBtn.textContent = '✕ Đóng';
+    closeBtn.style.cssText = 'margin-top:20px;background:rgba(255,255,255,0.15);color:#fff;border:none;padding:12px 32px;border-radius:10px;font-size:15px;font-weight:600;cursor:pointer;';
+    closeBtn.addEventListener('click', function() { overlay.remove(); });
+
+    overlay.appendChild(hint);
+    overlay.appendChild(imgContainer);
+    overlay.appendChild(closeBtn);
+    document.body.appendChild(overlay);
+}
+
+function dataURLtoBlobCustom(dataURL) {
+    var parts = dataURL.split(',');
+    var mime = parts[0].match(/:(.*?);/)[1];
+    var bstr = atob(parts[1]);
+    var n = bstr.length;
+    var u8arr = new Uint8Array(n);
+    for (var i = 0; i < n; i++) {
+        u8arr[i] = bstr.charCodeAt(i);
+    }
+    return new Blob([u8arr], { type: mime });
 }
 
 function calculateShenSha(dCan, dChi, mChi) {
