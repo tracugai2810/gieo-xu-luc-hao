@@ -685,17 +685,8 @@ function executeCapture(target, captureArea) {
         imageDisplay.innerHTML = '';
 
         const img = document.createElement('img');
+        img.src = currentImageDataUrl;
         img.alt = 'Kết quả quẻ Lục Hào';
-
-        // Dùng Blob URL cho img.src thay vì data URL
-        // Để nhấn giữ ảnh hiện menu "Lưu hình ảnh" trên WebView (Zalo, FB...)
-        try {
-            var displayBlob = dataURLtoBlob(currentImageDataUrl);
-            var displayBlobUrl = URL.createObjectURL(displayBlob);
-            img.src = displayBlobUrl;
-        } catch (e) {
-            img.src = currentImageDataUrl; // Fallback nếu lỗi
-        }
         imageDisplay.appendChild(img);
 
         // Hide loading, show result
@@ -1162,173 +1153,61 @@ function showToast(message) {
 
 function downloadImage() {
     if (!currentImageDataUrl) {
-        showToast('Chưa có ảnh để tải!');
+        alert('Chưa có ảnh để tải!');
         return;
     }
 
-    var timestamp = new Date().toISOString().slice(0, 10);
-    var filename = 'luchao_' + timestamp + '.png';
+    const timestamp = new Date().toISOString().slice(0, 10);
+    const filename = `luchao_${timestamp}.png`;
 
-    // Nhận diện OS và môi trường
-    var ua = navigator.userAgent || '';
-    var isIOS = /iPad|iPhone|iPod/.test(ua) && !window.MSStream;
-    var isInApp = /FBAN|FBAV|FB_IAB|Zalo|ZaloTheme|Instagram|Line|MicroMessenger|Snapchat|Twitter|TikTok/i.test(ua);
+    // Detect if mobile device
+    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
 
-    // === TRÌNH DUYỆT IN-APP (Zalo, Facebook, ...) ===
-    // Không dùng alert() vì gây đơ WebView. Hiển thị modal HTML thay thế.
-    if (isInApp) {
-        showDownloadGuide();
-        return;
-    }
+    // Convert base64 to blob
+    fetch(currentImageDataUrl)
+        .then(res => res.blob())
+        .then(blob => {
+            if (isMobile && navigator.share && navigator.canShare) {
+                // Mobile: Try Web Share API first
+                const file = new File([blob], filename, { type: 'image/png' });
+                const shareData = { files: [file] };
 
-    // === MOBILE (iOS + Android trình duyệt thường: Chrome, Safari, Samsung Internet...) ===
-    // Dùng Web Share API để người dùng có thể lưu thẳng vào Thư viện ảnh / Google Photos
-    // (Zalo/FB đã được tách riêng ở trên, không chạy tới đây)
-    var isMobile = isIOS || /Android/i.test(ua);
-    if (isMobile && navigator.share && navigator.canShare) {
-        try {
-            var blob = dataURLtoBlob(currentImageDataUrl);
-            var file = new File([blob], filename, { type: 'image/png' });
-            var shareData = { files: [file] };
-            if (navigator.canShare(shareData)) {
-                navigator.share(shareData)
-                    .then(function() { showToast('Đã lưu/chia sẻ ảnh thành công!'); })
-                    .catch(function() { directDownloadDataURL(filename); });
-                return;
+                if (navigator.canShare(shareData)) {
+                    navigator.share(shareData)
+                        .then(() => showToast('Đã chia sẻ thành công!'))
+                        .catch((err) => {
+                            console.log('Share cancelled or failed, trying fallback');
+                            fallbackDownload(blob, filename);
+                        });
+                    return;
+                }
             }
-        } catch (e) {
-            // Share API lỗi, chuyển sang tải trực tiếp
-        }
-    }
 
-    // === Desktop hoặc fallback: Tải trực tiếp ===
-    directDownloadDataURL(filename);
+            // Desktop and fallback: Direct download
+            fallbackDownload(blob, filename);
+            showToast('Đã tải ảnh thành công!');
+        })
+        .catch(err => {
+            console.error('Download error:', err);
+            // Ultimate fallback - direct link download
+            const link = document.createElement('a');
+            link.download = filename;
+            link.href = currentImageDataUrl;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        });
 }
 
-// Chuyển đổi base64 data URL → Blob (không dùng fetch, tương thích mọi trình duyệt)
-function dataURLtoBlob(dataURL) {
-    var parts = dataURL.split(',');
-    var mime = parts[0].match(/:(.*?);/)[1];
-    var bstr = atob(parts[1]);
-    var n = bstr.length;
-    var u8arr = new Uint8Array(n);
-    for (var i = 0; i < n; i++) {
-        u8arr[i] = bstr.charCodeAt(i);
-    }
-    return new Blob([u8arr], { type: mime });
-}
-
-// Tải ảnh bằng data URL trực tiếp (tương thích cao nhất, không dùng Blob URL)
-function directDownloadDataURL(filename) {
-    var link = document.createElement('a');
-    link.href = currentImageDataUrl;
+function fallbackDownload(blob, filename) {
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
     link.download = filename;
-    link.style.display = 'none';
+    link.href = url;
     document.body.appendChild(link);
     link.click();
-    setTimeout(function() {
-        document.body.removeChild(link);
-    }, 200);
-    showToast('Đã tải ảnh thành công!');
-}
-
-// Modal hướng dẫn tải ảnh cho trình duyệt in-app (thay thế alert gây đơ)
-function showDownloadGuide() {
-    var existing = document.getElementById('download-guide-overlay');
-    if (existing) {
-        existing.style.display = 'flex';
-        return;
-    }
-
-    var overlay = document.createElement('div');
-    overlay.id = 'download-guide-overlay';
-    overlay.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.7);display:flex;align-items:center;justify-content:center;z-index:99999;padding:20px;box-sizing:border-box;';
-
-    var box = document.createElement('div');
-    box.style.cssText = 'background:#1a1a2e;color:#e0e0e0;border-radius:16px;padding:28px 24px;max-width:340px;width:100%;text-align:center;box-shadow:0 8px 32px rgba(0,0,0,0.5);border:1px solid rgba(255,255,255,0.1);';
-
-    box.innerHTML = '<div style="font-size:40px;margin-bottom:12px;">📸</div>'
-        + '<div style="font-size:17px;font-weight:700;margin-bottom:12px;color:#fff;">Hướng dẫn lưu ảnh</div>'
-        + '<div style="font-size:14px;line-height:1.7;margin-bottom:16px;color:#ccc;">'
-        + 'Trình duyệt <b style="color:#ff6b6b;">Zalo / Facebook</b> không hỗ trợ tải tự động.<br><br>'
-        + '👉 <b style="color:#4ecdc4;">NHẤN GIỮ</b> vào ảnh quẻ bên trên rồi chọn <b style="color:#4ecdc4;">"Lưu hình ảnh"</b>.<br><br>'
-        + 'Hoặc bấm nút bên dưới để mở ảnh ra, rồi nhấn giữ lưu.'
-        + '</div>'
-        + '<button id="download-guide-open-btn" style="background:linear-gradient(135deg,#4ecdc4,#44bd9e);color:#fff;border:none;padding:12px 32px;border-radius:10px;font-size:15px;font-weight:600;cursor:pointer;width:100%;margin-bottom:10px;">🖼️ Mở ảnh để lưu</button>'
-        + '<button id="download-guide-close-btn" style="background:rgba(255,255,255,0.1);color:#aaa;border:1px solid rgba(255,255,255,0.15);padding:10px 32px;border-radius:10px;font-size:14px;cursor:pointer;width:100%;">Đóng</button>';
-
-    overlay.appendChild(box);
-    document.body.appendChild(overlay);
-
-    // Nút "Mở ảnh để lưu" - mở ảnh trong tab/cửa sổ mới
-    document.getElementById('download-guide-open-btn').addEventListener('click', function() {
-        overlay.style.display = 'none';
-        try {
-            // Tạo trang HTML chứa ảnh, mở trong cửa sổ mới
-            var blob = dataURLtoBlob(currentImageDataUrl);
-            var blobUrl = URL.createObjectURL(blob);
-            var w = window.open('');
-            if (w) {
-                w.document.write('<html><head><meta name="viewport" content="width=device-width,initial-scale=1"><title>Nhấn giữ ảnh để lưu</title></head>'
-                    + '<body style="margin:0;background:#111;display:flex;align-items:center;justify-content:center;min-height:100vh;padding:10px;box-sizing:border-box;">'
-                    + '<img src="' + blobUrl + '" style="max-width:100%;height:auto;border-radius:8px;">'
-                    + '</body></html>');
-                w.document.close();
-            } else {
-                // Nếu window.open bị chặn, hiển thị ảnh to ngay trong trang
-                showImageFullscreen();
-            }
-        } catch (e) {
-            showImageFullscreen();
-        }
-    });
-
-    // Đóng modal
-    document.getElementById('download-guide-close-btn').addEventListener('click', function() {
-        overlay.style.display = 'none';
-    });
-    overlay.addEventListener('click', function(e) {
-        if (e.target === overlay) {
-            overlay.style.display = 'none';
-        }
-    });
-}
-
-// Hiển thị ảnh toàn màn hình ngay trong trang (fallback khi window.open bị chặn)
-function showImageFullscreen() {
-    var existing = document.getElementById('fullscreen-image-overlay');
-    if (existing) existing.remove();
-
-    var overlay = document.createElement('div');
-    overlay.id = 'fullscreen-image-overlay';
-    overlay.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.95);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:99999;padding:15px;box-sizing:border-box;';
-
-    var hint = document.createElement('div');
-    hint.style.cssText = 'color:#4ecdc4;font-size:14px;font-weight:600;margin-bottom:12px;text-align:center;';
-    hint.textContent = '👆 Nhấn giữ vào ảnh bên dưới rồi chọn "Lưu hình ảnh"';
-
-    var img = document.createElement('img');
-    try {
-        var blob = dataURLtoBlob(currentImageDataUrl);
-        img.src = URL.createObjectURL(blob);
-    } catch(e) {
-        img.src = currentImageDataUrl;
-    }
-    img.style.cssText = 'max-width:100%;max-height:75vh;height:auto;border-radius:8px;';
-
-    var closeBtn = document.createElement('button');
-    closeBtn.textContent = '✕ Đóng';
-    closeBtn.style.cssText = 'margin-top:16px;background:rgba(255,255,255,0.15);color:#fff;border:none;padding:10px 28px;border-radius:10px;font-size:14px;cursor:pointer;';
-    closeBtn.addEventListener('click', function() { overlay.remove(); });
-
-    overlay.appendChild(hint);
-    overlay.appendChild(img);
-    overlay.appendChild(closeBtn);
-    document.body.appendChild(overlay);
-
-    overlay.addEventListener('click', function(e) {
-        if (e.target === overlay) overlay.remove();
-    });
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
 }
 
 function calculateShenSha(dCan, dChi, mChi) {

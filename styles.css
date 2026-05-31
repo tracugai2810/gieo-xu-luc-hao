@@ -317,6 +317,18 @@ body {
     box-shadow: 0 4px 12px rgba(217,119,6,0.3);
 }
 
+.btn-copy {
+    background: linear-gradient(135deg, #2563eb, #1d4ed8);
+    color: white;
+    border: 1px solid #3b82f6;
+}
+
+.btn-copy:hover {
+    background: linear-gradient(135deg, #3b82f6, #2563eb);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(59,130,246,0.3);
+}
+
 /* ========================================
    CAPTURE TARGET STYLES
    These styles are used for html2canvas image generation
