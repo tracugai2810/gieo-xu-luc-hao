@@ -1166,8 +1166,9 @@ function downloadImage() {
     const isAndroid = /Android/i.test(ua);
     const isInAppBrowser = /FBAN|FBAV|Zalo|Instagram|Line/i.test(ua);
 
-    if (isAndroid && isInAppBrowser) {
-        alert("Bạn đang dùng trình duyệt của ứng dụng (Zalo/Facebook...). Tính năng tải tự động có thể bị lỗi.\n\nVui lòng NHẤN GIỮ vào ảnh bên trên và chọn 'Lưu ảnh' để lưu thẳng vào Thư viện máy.");
+    if (isInAppBrowser) {
+        alert("Trình duyệt Zalo/Facebook không hỗ trợ tải tự động.\n\nVui lòng NHẤN GIỮ vào ảnh bên trên và chọn 'Lưu hình ảnh' (hoặc Save Image) để tải về máy.");
+        return;
     }
 
     // Convert base64 to blob
