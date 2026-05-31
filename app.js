@@ -1126,10 +1126,9 @@ function downloadImage() {
     var ua = navigator.userAgent || '';
     var isInApp = /FBAN|FBAV|FB_IAB|Zalo|ZaloTheme|Instagram|Line|MicroMessenger|Snapchat|Twitter|TikTok/i.test(ua);
     
-    // 1. Zalo, Facebook -> Báo lỗi, kêu chụp màn hình
+    // 1. Zalo, Facebook -> Hiện popup bắt chụp màn hình
     if (isInApp) {
-        showToast("Trình duyệt này lỗi tải ảnh. Vui lòng CHỤP MÀN HÌNH lại kết quả!");
-        document.getElementById('imageDisplay').scrollIntoView({ behavior: 'smooth', block: 'center' });
+        showInAppGuide();
         return;
     }
 
@@ -1177,6 +1176,38 @@ function fallbackDownload(dataUrl, filename) {
         document.body.removeChild(link);
     }, 200);
     showToast('Đã tải ảnh thành công!');
+}
+
+function showInAppGuide() {
+    var existing = document.getElementById('inapp-guide-overlay');
+    if (existing) existing.remove();
+
+    var overlay = document.createElement('div');
+    overlay.id = 'inapp-guide-overlay';
+    overlay.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.95);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:99999;padding:15px;box-sizing:border-box;';
+
+    var hint = document.createElement('div');
+    hint.style.cssText = 'color:#f59e0b;font-size:16px;font-weight:600;margin-bottom:16px;text-align:center;line-height:1.5;padding:0 10px;';
+    hint.innerHTML = 'Trình duyệt này chặn tải tự động.<br>📸 Vui lòng <b>CHỤP ẢNH MÀN HÌNH</b> để lưu lại quẻ này!';
+
+    var imgContainer = document.createElement('div');
+    imgContainer.style.cssText = 'max-height:75vh; overflow-y:auto; border-radius:8px; border: 2px solid #d97706; box-shadow: 0 0 15px rgba(217,119,6,0.3);';
+    
+    var img = document.createElement('img');
+    img.src = currentImageDataUrl;
+    img.style.cssText = 'max-width:100%;height:auto;display:block;';
+    
+    imgContainer.appendChild(img);
+
+    var closeBtn = document.createElement('button');
+    closeBtn.textContent = '✕ Đóng';
+    closeBtn.style.cssText = 'margin-top:20px;background:rgba(255,255,255,0.15);color:#fff;border:none;padding:12px 32px;border-radius:10px;font-size:15px;font-weight:600;cursor:pointer;';
+    closeBtn.addEventListener('click', function() { overlay.remove(); });
+
+    overlay.appendChild(hint);
+    overlay.appendChild(imgContainer);
+    overlay.appendChild(closeBtn);
+    document.body.appendChild(overlay);
 }
 
 function calculateShenSha(dCan, dChi, mChi) {
