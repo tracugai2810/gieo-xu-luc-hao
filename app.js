@@ -1160,21 +1160,28 @@ function downloadImage() {
     const timestamp = new Date().toISOString().slice(0, 10);
     const filename = `luchao_${timestamp}.png`;
 
-    // Detect if mobile device
-    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+    // Nhận diện OS và môi trường
+    const ua = navigator.userAgent || navigator.vendor || window.opera;
+    const isIOS = /iPad|iPhone|iPod/.test(ua) && !window.MSStream;
+    const isAndroid = /Android/i.test(ua);
+    const isInAppBrowser = /FBAN|FBAV|Zalo|Instagram|Line/i.test(ua);
+
+    if (isAndroid && isInAppBrowser) {
+        alert("Bạn đang dùng trình duyệt của ứng dụng (Zalo/Facebook...). Tính năng tải tự động có thể bị lỗi.\n\nVui lòng NHẤN GIỮ vào ảnh bên trên và chọn 'Lưu ảnh' để lưu thẳng vào Thư viện máy.");
+    }
 
     // Convert base64 to blob
     fetch(currentImageDataUrl)
         .then(res => res.blob())
         .then(blob => {
-            if (isMobile && navigator.share && navigator.canShare) {
-                // Mobile: Try Web Share API first
+            // Chỉ dùng Web Share API trên iOS để có nút "Save Image" quen thuộc
+            if (isIOS && navigator.share && navigator.canShare) {
                 const file = new File([blob], filename, { type: 'image/png' });
                 const shareData = { files: [file] };
 
                 if (navigator.canShare(shareData)) {
                     navigator.share(shareData)
-                        .then(() => showToast('Đã chia sẻ thành công!'))
+                        .then(() => showToast('Đã mở bảng chia sẻ/lưu ảnh!'))
                         .catch((err) => {
                             console.log('Share cancelled or failed, trying fallback');
                             fallbackDownload(blob, filename);
@@ -1183,9 +1190,13 @@ function downloadImage() {
                 }
             }
 
-            // Desktop and fallback: Direct download
+            // Android hoặc Desktop hoặc fallback: Direct download (không mở share)
             fallbackDownload(blob, filename);
-            showToast('Đã tải ảnh thành công!');
+            if (isAndroid) {
+                showToast('Đang tải ảnh xuống... Nếu không tìm thấy, hãy nhấn giữ vào ảnh để lưu!');
+            } else {
+                showToast('Đã tải ảnh thành công!');
+            }
         })
         .catch(err => {
             console.error('Download error:', err);
