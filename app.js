@@ -405,7 +405,7 @@ function processDivination() {
 
     const dVal = document.getElementById('inputDate').value;
     if (!dVal) {
-        alert("Vui lòng chọn ngày giờ gieo quẻ!");
+        showToast("Vui lòng chọn ngày giờ gieo quẻ!");
         return;
     }
 
