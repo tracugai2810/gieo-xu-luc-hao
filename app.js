@@ -668,7 +668,7 @@ function captureAndDisplayImage() {
 
 function executeCapture(target, captureArea) {
     html2canvas(target, {
-        scale: 1.5,
+        scale: window.innerWidth < 768 ? 1 : 1.5,
         useCORS: true,
         logging: false
     }).then(canvas => {
@@ -1089,18 +1089,6 @@ function fallbackCopyText(text) {
     document.body.removeChild(textArea);
 }
 
-async function copyImageToClipboard() {
-    if (!currentImageDataUrl) {
-        alert("Vui lòng lập quẻ trước!");
-        return;
-    }
-
-    var ua = navigator.userAgent || '';
-    var isInApp = /FBAN|FBAV|FB_IAB|Zalo|ZaloTheme|Instagram|Line|MicroMessenger|Snapchat|Twitter|TikTok/i.test(ua);
-    if (isInApp) {
-        showInAppGuide();
-        return;
-    }
 
     try {
         // Convert data URL to blob
@@ -1164,101 +1152,34 @@ function showToast(message) {
 
 function downloadImage() {
     if (!currentImageDataUrl) {
-        alert('Chưa có ảnh để tải!');
+        showToast('Chưa có ảnh để tải!');
         return;
     }
 
-    var ua = navigator.userAgent || '';
-    var isInApp = /FBAN|FBAV|FB_IAB|Zalo|ZaloTheme|Instagram|Line|MicroMessenger|Snapchat|Twitter|TikTok/i.test(ua);
-    if (isInApp) {
-        showInAppGuide();
+    var isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+    var isInApp = /FBAN|FBAV|FB_IAB|Zalo|ZaloTheme|Instagram|Line|MicroMessenger|Snapchat|Twitter|TikTok/i.test(navigator.userAgent);
+    
+    // Nếu là Zalo/FB hoặc iOS (vì iOS Safari chặn a.download data URL)
+    if (isInApp || (isMobile && /iPad|iPhone|iPod/.test(navigator.userAgent))) {
+        showToast("👇 Hãy NHẤN GIỮ VÀO ẢNH để Lưu hoặc Sao chép!");
+        document.getElementById('imageDisplay').scrollIntoView({ behavior: 'smooth', block: 'center' });
         return;
     }
 
+    // Direct download (không dùng fetch, không dùng blob, không tốn RAM)
     const timestamp = new Date().toISOString().slice(0, 10);
     const filename = `luchao_${timestamp}.png`;
-
-    // Detect if mobile device
-    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-
-    // Convert base64 to blob
-    fetch(currentImageDataUrl)
-        .then(res => res.blob())
-        .then(blob => {
-            if (isMobile && navigator.share && navigator.canShare) {
-                // Mobile: Try Web Share API first
-                const file = new File([blob], filename, { type: 'image/png' });
-                const shareData = { files: [file] };
-
-                if (navigator.canShare(shareData)) {
-                    navigator.share(shareData)
-                        .then(() => showToast('Đã chia sẻ thành công!'))
-                        .catch((err) => {
-                            console.log('Share cancelled or failed, trying fallback');
-                            fallbackDownload(blob, filename);
-                        });
-                    return;
-                }
-            }
-
-            // Desktop and fallback: Direct download
-            fallbackDownload(blob, filename);
-            showToast('Đã tải ảnh thành công!');
-        })
-        .catch(err => {
-            console.error('Download error:', err);
-            // Ultimate fallback - direct link download
-            const link = document.createElement('a');
-            link.download = filename;
-            link.href = currentImageDataUrl;
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-        });
-}
-
-function fallbackDownload(blob, filename) {
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
+    
+    var link = document.createElement('a');
     link.download = filename;
-    link.href = url;
+    link.href = currentImageDataUrl;
+    link.style.display = 'none';
     document.body.appendChild(link);
     link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
-}
-
-function showInAppGuide() {
-    var existing = document.getElementById('inapp-guide-overlay');
-    if (existing) existing.remove();
-
-    var overlay = document.createElement('div');
-    overlay.id = 'inapp-guide-overlay';
-    overlay.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.95);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:99999;padding:15px;box-sizing:border-box;';
-
-    var hint = document.createElement('div');
-    hint.style.cssText = 'color:#4ecdc4;font-size:16px;font-weight:600;margin-bottom:16px;text-align:center;line-height:1.5;';
-    hint.innerHTML = '👉 <b>NHẤN GIỮ</b> vào ảnh dưới đây để Lưu hoặc Sao chép';
-
-    var imgContainer = document.createElement('div');
-    imgContainer.style.cssText = 'max-height:75vh; overflow-y:auto; border-radius:8px;';
-    
-    var img = document.createElement('img');
-    // Dùng trực tiếp data URL để không bị đơ trình duyệt khi convert blob
-    img.src = currentImageDataUrl;
-    img.style.cssText = 'max-width:100%;height:auto;display:block;';
-    
-    imgContainer.appendChild(img);
-
-    var closeBtn = document.createElement('button');
-    closeBtn.textContent = '✕ Đóng';
-    closeBtn.style.cssText = 'margin-top:20px;background:rgba(255,255,255,0.15);color:#fff;border:none;padding:12px 32px;border-radius:10px;font-size:15px;font-weight:600;cursor:pointer;';
-    closeBtn.addEventListener('click', function() { overlay.remove(); });
-
-    overlay.appendChild(hint);
-    overlay.appendChild(imgContainer);
-    overlay.appendChild(closeBtn);
-    document.body.appendChild(overlay);
+    setTimeout(function() {
+        document.body.removeChild(link);
+    }, 200);
+    showToast('Đã tải ảnh thành công!');
 }
 
 function calculateShenSha(dCan, dChi, mChi) {
