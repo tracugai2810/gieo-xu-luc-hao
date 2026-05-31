@@ -685,8 +685,17 @@ function executeCapture(target, captureArea) {
         imageDisplay.innerHTML = '';
 
         const img = document.createElement('img');
-        img.src = currentImageDataUrl;
         img.alt = 'Kết quả quẻ Lục Hào';
+
+        // Dùng Blob URL cho img.src thay vì data URL
+        // Để nhấn giữ ảnh hiện menu "Lưu hình ảnh" trên WebView (Zalo, FB...)
+        try {
+            var displayBlob = dataURLtoBlob(currentImageDataUrl);
+            var displayBlobUrl = URL.createObjectURL(displayBlob);
+            img.src = displayBlobUrl;
+        } catch (e) {
+            img.src = currentImageDataUrl; // Fallback nếu lỗi
+        }
         imageDisplay.appendChild(img);
 
         // Hide loading, show result
@@ -1238,25 +1247,85 @@ function showDownloadGuide() {
 
     box.innerHTML = '<div style="font-size:40px;margin-bottom:12px;">📸</div>'
         + '<div style="font-size:17px;font-weight:700;margin-bottom:12px;color:#fff;">Hướng dẫn lưu ảnh</div>'
-        + '<div style="font-size:14px;line-height:1.7;margin-bottom:20px;color:#ccc;">'
+        + '<div style="font-size:14px;line-height:1.7;margin-bottom:16px;color:#ccc;">'
         + 'Trình duyệt <b style="color:#ff6b6b;">Zalo / Facebook</b> không hỗ trợ tải tự động.<br><br>'
-        + '👉 Hãy <b style="color:#4ecdc4;">NHẤN GIỮ</b> vào ảnh quẻ bên trên<br>rồi chọn <b style="color:#4ecdc4;">\"Lưu hình ảnh\"</b> để tải về máy.'
+        + '👉 <b style="color:#4ecdc4;">NHẤN GIỮ</b> vào ảnh quẻ bên trên rồi chọn <b style="color:#4ecdc4;">"Lưu hình ảnh"</b>.<br><br>'
+        + 'Hoặc bấm nút bên dưới để mở ảnh ra, rồi nhấn giữ lưu.'
         + '</div>'
-        + '<button id="download-guide-close-btn" style="background:linear-gradient(135deg,#667eea,#764ba2);color:#fff;border:none;padding:12px 32px;border-radius:10px;font-size:15px;font-weight:600;cursor:pointer;width:100%;">Đã hiểu</button>';
+        + '<button id="download-guide-open-btn" style="background:linear-gradient(135deg,#4ecdc4,#44bd9e);color:#fff;border:none;padding:12px 32px;border-radius:10px;font-size:15px;font-weight:600;cursor:pointer;width:100%;margin-bottom:10px;">🖼️ Mở ảnh để lưu</button>'
+        + '<button id="download-guide-close-btn" style="background:rgba(255,255,255,0.1);color:#aaa;border:1px solid rgba(255,255,255,0.15);padding:10px 32px;border-radius:10px;font-size:14px;cursor:pointer;width:100%;">Đóng</button>';
 
     overlay.appendChild(box);
     document.body.appendChild(overlay);
 
-    // Đóng modal khi bấm "Đã hiểu"
+    // Nút "Mở ảnh để lưu" - mở ảnh trong tab/cửa sổ mới
+    document.getElementById('download-guide-open-btn').addEventListener('click', function() {
+        overlay.style.display = 'none';
+        try {
+            // Tạo trang HTML chứa ảnh, mở trong cửa sổ mới
+            var blob = dataURLtoBlob(currentImageDataUrl);
+            var blobUrl = URL.createObjectURL(blob);
+            var w = window.open('');
+            if (w) {
+                w.document.write('<html><head><meta name="viewport" content="width=device-width,initial-scale=1"><title>Nhấn giữ ảnh để lưu</title></head>'
+                    + '<body style="margin:0;background:#111;display:flex;align-items:center;justify-content:center;min-height:100vh;padding:10px;box-sizing:border-box;">'
+                    + '<img src="' + blobUrl + '" style="max-width:100%;height:auto;border-radius:8px;">'
+                    + '</body></html>');
+                w.document.close();
+            } else {
+                // Nếu window.open bị chặn, hiển thị ảnh to ngay trong trang
+                showImageFullscreen();
+            }
+        } catch (e) {
+            showImageFullscreen();
+        }
+    });
+
+    // Đóng modal
     document.getElementById('download-guide-close-btn').addEventListener('click', function() {
         overlay.style.display = 'none';
     });
-
-    // Đóng modal khi bấm vào vùng tối bên ngoài
     overlay.addEventListener('click', function(e) {
         if (e.target === overlay) {
             overlay.style.display = 'none';
         }
+    });
+}
+
+// Hiển thị ảnh toàn màn hình ngay trong trang (fallback khi window.open bị chặn)
+function showImageFullscreen() {
+    var existing = document.getElementById('fullscreen-image-overlay');
+    if (existing) existing.remove();
+
+    var overlay = document.createElement('div');
+    overlay.id = 'fullscreen-image-overlay';
+    overlay.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.95);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:99999;padding:15px;box-sizing:border-box;';
+
+    var hint = document.createElement('div');
+    hint.style.cssText = 'color:#4ecdc4;font-size:14px;font-weight:600;margin-bottom:12px;text-align:center;';
+    hint.textContent = '👆 Nhấn giữ vào ảnh bên dưới rồi chọn "Lưu hình ảnh"';
+
+    var img = document.createElement('img');
+    try {
+        var blob = dataURLtoBlob(currentImageDataUrl);
+        img.src = URL.createObjectURL(blob);
+    } catch(e) {
+        img.src = currentImageDataUrl;
+    }
+    img.style.cssText = 'max-width:100%;max-height:75vh;height:auto;border-radius:8px;';
+
+    var closeBtn = document.createElement('button');
+    closeBtn.textContent = '✕ Đóng';
+    closeBtn.style.cssText = 'margin-top:16px;background:rgba(255,255,255,0.15);color:#fff;border:none;padding:10px 28px;border-radius:10px;font-size:14px;cursor:pointer;';
+    closeBtn.addEventListener('click', function() { overlay.remove(); });
+
+    overlay.appendChild(hint);
+    overlay.appendChild(img);
+    overlay.appendChild(closeBtn);
+    document.body.appendChild(overlay);
+
+    overlay.addEventListener('click', function(e) {
+        if (e.target === overlay) overlay.remove();
     });
 }
 
