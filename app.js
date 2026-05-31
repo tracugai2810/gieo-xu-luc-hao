@@ -1238,18 +1238,14 @@ function showInAppGuide() {
 
     var hint = document.createElement('div');
     hint.style.cssText = 'color:#4ecdc4;font-size:16px;font-weight:600;margin-bottom:16px;text-align:center;line-height:1.5;';
-    hint.innerHTML = 'Trình duyệt này chặn tải trực tiếp.<br>👇 Hãy <b>NHẤN GIỮ</b> vào ảnh dưới đây để Lưu hoặc Sao chép';
+    hint.innerHTML = '👉 <b>NHẤN GIỮ</b> vào ảnh dưới đây để Lưu hoặc Sao chép';
 
     var imgContainer = document.createElement('div');
     imgContainer.style.cssText = 'max-height:75vh; overflow-y:auto; border-radius:8px;';
     
     var img = document.createElement('img');
-    try {
-        var blob = dataURLtoBlobCustom(currentImageDataUrl);
-        img.src = URL.createObjectURL(blob);
-    } catch(e) {
-        img.src = currentImageDataUrl;
-    }
+    // Dùng trực tiếp data URL để không bị đơ trình duyệt khi convert blob
+    img.src = currentImageDataUrl;
     img.style.cssText = 'max-width:100%;height:auto;display:block;';
     
     imgContainer.appendChild(img);
@@ -1263,18 +1259,6 @@ function showInAppGuide() {
     overlay.appendChild(imgContainer);
     overlay.appendChild(closeBtn);
     document.body.appendChild(overlay);
-}
-
-function dataURLtoBlobCustom(dataURL) {
-    var parts = dataURL.split(',');
-    var mime = parts[0].match(/:(.*?);/)[1];
-    var bstr = atob(parts[1]);
-    var n = bstr.length;
-    var u8arr = new Uint8Array(n);
-    for (var i = 0; i < n; i++) {
-        u8arr[i] = bstr.charCodeAt(i);
-    }
-    return new Blob([u8arr], { type: mime });
 }
 
 function calculateShenSha(dCan, dChi, mChi) {
