@@ -1090,39 +1090,6 @@ function fallbackCopyText(text) {
 }
 
 
-    try {
-        // Convert data URL to blob
-        const response = await fetch(currentImageDataUrl);
-        const blob = await response.blob();
-
-        // Use Clipboard API to copy image
-        if (navigator.clipboard && navigator.clipboard.write) {
-            const clipboardItem = new ClipboardItem({
-                'image/png': blob
-            });
-            await navigator.clipboard.write([clipboardItem]);
-            showToast("Đã sao chép ảnh thành công!");
-        } else {
-            // Fallback: open image in new tab for manual copy
-            const newTab = window.open();
-            newTab.document.write(`<img src="${currentImageDataUrl}" style="max-width:100%">`);
-            newTab.document.title = "Nhấn Ctrl+A, Ctrl+C để sao chép";
-            showToast("Mở tab mới - nhấn Ctrl+A, Ctrl+C để sao chép");
-        }
-    } catch (err) {
-        console.error('Copy image failed:', err);
-        // Fallback: open image in new tab
-        const newTab = window.open();
-        if (newTab) {
-            newTab.document.write(`<img src="${currentImageDataUrl}" style="max-width:100%">`);
-            newTab.document.title = "Nhấn Ctrl+A, Ctrl+C để sao chép";
-            showToast("Mở tab mới - nhấn Ctrl+A, Ctrl+C để sao chép");
-        } else {
-            showToast("Trình duyệt chặn mở tab mới. Không thể sao chép.");
-        }
-    }
-}
-
 function showToast(message) {
     let toast = document.getElementById('toast-notification');
     if (!toast) {
@@ -1156,23 +1123,53 @@ function downloadImage() {
         return;
     }
 
-    var isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-    var isInApp = /FBAN|FBAV|FB_IAB|Zalo|ZaloTheme|Instagram|Line|MicroMessenger|Snapchat|Twitter|TikTok/i.test(navigator.userAgent);
+    var ua = navigator.userAgent || '';
+    var isInApp = /FBAN|FBAV|FB_IAB|Zalo|ZaloTheme|Instagram|Line|MicroMessenger|Snapchat|Twitter|TikTok/i.test(ua);
     
-    // Nếu là Zalo/FB hoặc iOS (vì iOS Safari chặn a.download data URL)
-    if (isInApp || (isMobile && /iPad|iPhone|iPod/.test(navigator.userAgent))) {
-        showToast("👇 Hãy NHẤN GIỮ VÀO ẢNH để Lưu hoặc Sao chép!");
+    // 1. Zalo, Facebook -> Báo lỗi, kêu chụp màn hình
+    if (isInApp) {
+        showToast("Trình duyệt này lỗi tải ảnh. Vui lòng CHỤP MÀN HÌNH lại kết quả!");
         document.getElementById('imageDisplay').scrollIntoView({ behavior: 'smooth', block: 'center' });
         return;
     }
 
-    // Direct download (không dùng fetch, không dùng blob, không tốn RAM)
     const timestamp = new Date().toISOString().slice(0, 10);
     const filename = `luchao_${timestamp}.png`;
-    
+    var isIOS = /iPad|iPhone|iPod/.test(ua) && !window.MSStream;
+
+    // 2. iOS/iPad -> Giữ nguyên dạng chia sẻ
+    if (isIOS && navigator.share && navigator.canShare) {
+        fetch(currentImageDataUrl)
+            .then(res => res.blob())
+            .then(blob => {
+                const file = new File([blob], filename, { type: 'image/png' });
+                const shareData = { files: [file] };
+                if (navigator.canShare(shareData)) {
+                    navigator.share(shareData)
+                        .then(() => showToast('Đã mở bảng lưu/chia sẻ ảnh!'))
+                        .catch(err => {
+                            console.log('Share cancelled or failed', err);
+                            fallbackDownload(currentImageDataUrl, filename);
+                        });
+                    return;
+                }
+                fallbackDownload(currentImageDataUrl, filename);
+            })
+            .catch(err => {
+                console.error('Download error:', err);
+                fallbackDownload(currentImageDataUrl, filename);
+            });
+        return;
+    }
+
+    // 3. Android, Desktop -> Tải luôn, tải thẳng không share
+    fallbackDownload(currentImageDataUrl, filename);
+}
+
+function fallbackDownload(dataUrl, filename) {
     var link = document.createElement('a');
     link.download = filename;
-    link.href = currentImageDataUrl;
+    link.href = dataUrl;
     link.style.display = 'none';
     document.body.appendChild(link);
     link.click();
