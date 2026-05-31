@@ -1181,16 +1181,18 @@ function downloadImage() {
         return;
     }
 
-    // === iOS (Safari, Chrome trên iPhone/iPad) ===
-    // Dùng Web Share API để có nút "Lưu hình ảnh" quen thuộc
-    if (isIOS && navigator.share && navigator.canShare) {
+    // === MOBILE (iOS + Android trình duyệt thường: Chrome, Safari, Samsung Internet...) ===
+    // Dùng Web Share API để người dùng có thể lưu thẳng vào Thư viện ảnh / Google Photos
+    // (Zalo/FB đã được tách riêng ở trên, không chạy tới đây)
+    var isMobile = isIOS || /Android/i.test(ua);
+    if (isMobile && navigator.share && navigator.canShare) {
         try {
             var blob = dataURLtoBlob(currentImageDataUrl);
             var file = new File([blob], filename, { type: 'image/png' });
             var shareData = { files: [file] };
             if (navigator.canShare(shareData)) {
                 navigator.share(shareData)
-                    .then(function() { showToast('Đã mở bảng lưu/chia sẻ ảnh!'); })
+                    .then(function() { showToast('Đã lưu/chia sẻ ảnh thành công!'); })
                     .catch(function() { directDownloadDataURL(filename); });
                 return;
             }
@@ -1199,7 +1201,7 @@ function downloadImage() {
         }
     }
 
-    // === Android & Desktop: Tải trực tiếp bằng data URL ===
+    // === Desktop hoặc fallback: Tải trực tiếp ===
     directDownloadDataURL(filename);
 }
 
