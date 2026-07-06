@@ -1439,8 +1439,12 @@ function performToss() {
             document.getElementById('toss-status').innerText = `Hào ${currentTossIndex} / 6`;
         } else {
             tossBtn.style.display = 'none';
-            document.getElementById('finish-toss-btn').style.display = 'block';
+            const finishBtn = document.getElementById('finish-toss-btn');
+            if (finishBtn) finishBtn.style.display = 'none';
             document.getElementById('toss-status').innerText = 'Đã gieo xong 6 hào!';
+            
+            // Auto finish toss sequence after 6th toss
+            finishTossSequence();
         }
 
     }, 2000);
