@@ -246,6 +246,21 @@ body {
     max-width: 100%;
     height: auto;
     display: block;
+    cursor: pointer;
+    -webkit-touch-callout: default !important;
+    user-select: auto !important;
+    transition: transform 0.25s ease, box-shadow 0.25s ease;
+}
+
+@keyframes pulseHighlight {
+    0% { outline: 3px solid rgba(197, 160, 89, 0); transform: scale(1); }
+    50% { outline: 3px solid rgba(197, 160, 89, 0.95); transform: scale(1.015); box-shadow: 0 4px 20px rgba(197, 160, 89, 0.35); }
+    100% { outline: 3px solid rgba(197, 160, 89, 0); transform: scale(1); }
+}
+
+.pulse-highlight {
+    animation: pulseHighlight 1.5s ease-in-out 2;
+    border-radius: 4px;
 }
 
 .save-hint {
