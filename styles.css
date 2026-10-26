@@ -249,10 +249,15 @@ body {
 }
 
 .save-hint {
-    font-size: 0.82rem;
-    color: var(--text-muted);
-    font-style: italic;
-    margin-bottom: 8px;
+    font-size: 0.85rem;
+    color: #4a4539;
+    background: #fdfcee;
+    border: 1px dashed #d6cca4;
+    border-radius: 6px;
+    padding: 8px 12px;
+    margin: 10px 0;
+    text-align: center;
+    line-height: 1.4;
 }
 
 .hint-mobile { display: inline; }

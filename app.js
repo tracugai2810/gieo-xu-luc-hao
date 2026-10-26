@@ -1611,25 +1611,32 @@ function showToast(message) {
         toast = document.createElement('div');
         toast.id = 'toast-notification';
         toast.style.position = 'fixed';
-        toast.style.bottom = '20px';
+        toast.style.bottom = '24px';
         toast.style.left = '50%';
         toast.style.transform = 'translateX(-50%)';
-        toast.style.backgroundColor = 'rgba(0, 0, 0, 0.8)';
-        toast.style.color = 'white';
-        toast.style.padding = '10px 20px';
-        toast.style.borderRadius = '5px';
-        toast.style.zIndex = '1000';
+        toast.style.backgroundColor = 'rgba(0, 0, 0, 0.88)';
+        toast.style.color = '#ffffff';
+        toast.style.padding = '12px 20px';
+        toast.style.borderRadius = '8px';
+        toast.style.zIndex = '99999';
+        toast.style.maxWidth = '90vw';
+        toast.style.textAlign = 'center';
+        toast.style.lineHeight = '1.45';
+        toast.style.fontSize = '14px';
+        toast.style.boxShadow = '0 4px 16px rgba(0,0,0,0.3)';
         toast.style.opacity = '0';
-        toast.style.transition = 'opacity 0.3s';
+        toast.style.transition = 'opacity 0.3s ease-in-out';
+        toast.style.pointerEvents = 'none';
         document.body.appendChild(toast);
     }
 
-    toast.textContent = message;
+    toast.innerHTML = message;
     toast.style.opacity = '1';
 
-    setTimeout(() => {
+    if (window._toastTimeout) clearTimeout(window._toastTimeout);
+    window._toastTimeout = setTimeout(() => {
         toast.style.opacity = '0';
-    }, 3000);
+    }, 4500);
 }
 
 function triggerServerDownload(dataUrl, filename) {
@@ -1668,7 +1675,7 @@ function triggerServerDownload(dataUrl, filename) {
     document.getElementById('inAppDownloadImage').value = dataUrl;
     document.getElementById('inAppDownloadFilename').value = filename;
     form.submit();
-    showToast('Đang tải ảnh xuống máy...');
+    showToast('Đang tải ảnh xuống máy...<br><span style="font-size:12px;opacity:0.9;">Mở Thư viện ➔ chọn Album "Tải về" để xem ảnh!</span>');
 }
 
 function fallbackDownload(dataUrl, filename) {
@@ -1681,7 +1688,7 @@ function fallbackDownload(dataUrl, filename) {
     setTimeout(() => {
         document.body.removeChild(link);
     }, 200);
-    showToast('Đã tải ảnh thành công!');
+    showToast('Đã tải ảnh về máy!<br><span style="font-size:12px;opacity:0.9;">Mở Thư viện ➔ chọn Album "Tải về" để xem ảnh nhé!</span>');
 }
 
 function downloadImage() {
@@ -1693,12 +1700,12 @@ function downloadImage() {
     const timestamp = new Date().toISOString().slice(0, 10);
     const filename = `que_luc_hao_${timestamp}.png`;
     const ua = navigator.userAgent || '';
-    const isIOS = /iPad|iPhone|iPod/.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+    const isMobile = /Android|iPhone|iPad|iPod|webOS|BlackBerry|IEMobile|Opera Mini/i.test(ua);
     const isInApp = /FBAN|FBAV|FB_IAB|Zalo|ZaloTheme|Instagram|Line|MicroMessenger|Snapchat|Twitter|TikTok/i.test(ua);
 
-    // 1. iOS (iPhone / iPad) trong Facebook / Zalo hoặc Safari:
-    // Gọi Web Share API hệ thống để khách chọn "Lưu hình ảnh" vào Album Ảnh ngay lập tức
-    if (isIOS && navigator.share && navigator.canShare) {
+    // 1. Trên thiết bị di động (cả iOS và Android), thử dùng Web Share API hệ thống nếu hỗ trợ
+    // Mở bảng chia sẻ hệ thống: khách bấm "Lưu vào máy" sẽ vào thẳng Album/Thư viện hoặc gửi trực tiếp qua Zalo
+    if (isMobile && navigator.share && navigator.canShare) {
         const blobPromise = currentImageBlob 
             ? Promise.resolve(currentImageBlob) 
             : fetch(currentImageDataUrl).then(r => r.blob());
@@ -1710,24 +1717,37 @@ function downloadImage() {
                 navigator.share(shareData)
                     .then(() => showToast('Đã mở bảng lưu ảnh!'))
                     .catch(err => {
-                        console.log('Share dismissed or failed:', err);
-                        fallbackDownload(currentImageDataUrl, filename);
+                        console.log('Share dismissed or cancelled:', err);
+                        if (isInApp) {
+                            triggerServerDownload(currentImageDataUrl, filename);
+                        } else {
+                            fallbackDownload(currentImageDataUrl, filename);
+                        }
                     });
                 return;
             }
-            fallbackDownload(currentImageDataUrl, filename);
-        }).catch(() => fallbackDownload(currentImageDataUrl, filename));
+            if (isInApp) {
+                triggerServerDownload(currentImageDataUrl, filename);
+            } else {
+                fallbackDownload(currentImageDataUrl, filename);
+            }
+        }).catch(() => {
+            if (isInApp) {
+                triggerServerDownload(currentImageDataUrl, filename);
+            } else {
+                fallbackDownload(currentImageDataUrl, filename);
+            }
+        });
         return;
     }
 
-    // 2. Android trong trình duyệt nhúng Facebook / Zalo:
-    // WebView Android chặn data:/blob:, ta gửi qua cổng máy chủ /api/download để DownloadManager của Android tải thẳng về máy!
+    // 2. Trình duyệt nhúng Facebook / Zalo (Android WebView):
     if (isInApp) {
         triggerServerDownload(currentImageDataUrl, filename);
         return;
     }
 
-    // 3. Trình duyệt chuẩn (Chrome, Edge, Firefox, Cốc Cốc trên Android & Máy tính): Tải trực tiếp ngay
+    // 3. Trình duyệt chuẩn (Chrome, Edge, Firefox, Cốc Cốc trên Android & Máy tính):
     fallbackDownload(currentImageDataUrl, filename);
 }
 
