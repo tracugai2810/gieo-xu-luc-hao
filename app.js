@@ -1829,19 +1829,32 @@ function downloadImage() {
     const isAndroid = /Android/i.test(ua);
     const isInApp = /FBAN|FBAV|FB_IAB|FBIOS|Messenger|Zalo|ZaloTheme|Instagram|Line\/|MicroMessenger|Snapchat|Twitter|TikTok|musical_ly|BytedanceWebview|; wv\)/i.test(ua);
 
-    // 1. iPhone / iPad
+    // 1. iPhone / iPad: Gọi menu "Lưu hình ảnh" gốc của Apple (Web Share API)
     if (isIOS) {
         shareImageOnIOS(filename);
         return;
     }
 
-    // 2. Android (mọi trình duyệt, kể cả Facebook / Messenger / Zalo)
-    if (isAndroid) {
-        downloadViaServer(filename, isInApp);
+    // 2. Android trong Facebook / Zalo / Messenger (trình duyệt nhúng):
+    // Tuyệt đối KHÔNG chuyển đổi URL / window.location để tránh popup "Rời khỏi trang" của Facebook.
+    // Cuộn mượt đến ảnh, nhấp nháy viền ảnh và hướng dẫn khách chạm giữ 1 giây -> lưu thẳng vào Bộ sưu tập.
+    if (isAndroid && isInApp) {
+        showLongPressGuide();
         return;
     }
 
-    // 3. Máy tính
+    // 3. Android trên trình duyệt chuẩn (Chrome, Cốc Cốc, Samsung Internet, Edge...)
+    if (isAndroid) {
+        const downloaded = tryBlobDownload(filename);
+        if (downloaded) {
+            showToast('Đang tải ảnh về máy!<br><span style="font-size:12px;opacity:0.9;">Mở Thư viện ➔ chọn Album "Tải về" để xem ảnh nhé!</span>');
+        } else {
+            showLongPressGuide();
+        }
+        return;
+    }
+
+    // 4. Máy tính
     if (tryBlobDownload(filename)) {
         showToast('Đã tải ảnh về máy!');
     } else {
