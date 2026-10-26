@@ -1648,8 +1648,6 @@ function showToast(message) {
 // - Máy tính: tải trực tiếp
 // ============================================
 
-let isPreparingDownload = false;
-
 function buildDownloadFilename() {
     const d = new Date();
     const p = n => String(n).padStart(2, '0');
@@ -1699,98 +1697,36 @@ function tryBlobDownload(filename) {
     }
 }
 
-function highlightImageForLongPress() {
-    const imgContainer = document.getElementById('imageDisplay');
-    if (!imgContainer) return;
-    imgContainer.scrollIntoView({ behavior: 'smooth', block: 'center' });
+function showInAppGuide() {
+    const oldOverlay = document.getElementById('inapp-guide-modal');
+    if (oldOverlay) oldOverlay.remove();
 
-    const img = imgContainer.querySelector('img');
-    if (img) {
-        img.classList.remove('pulse-highlight');
-        void img.offsetWidth; // force reflow
-        img.classList.add('pulse-highlight');
-        setTimeout(() => {
-            img.classList.remove('pulse-highlight');
-        }, 3000);
-    }
-}
+    const overlay = document.createElement('div');
+    overlay.id = 'inapp-guide-modal';
+    overlay.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.92);z-index:999999;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:15px;box-sizing:border-box;';
 
-function showLongPressGuide(prefix) {
-    highlightImageForLongPress();
-    showToast((prefix ? prefix + '<br>' : '') + '👉 Chạm giữ vào ảnh quẻ 1 giây ➔ chọn <b>"Lưu hình ảnh"</b> để lưu về máy.');
-}
+    const hint = document.createElement('div');
+    hint.innerHTML = '<div style="font-size:18px;font-weight:700;color:#f59e0b;margin-bottom:8px;text-align:center;">Trình duyệt này chặn tải tự động.</div><div style="font-size:16px;color:#fff;text-align:center;margin-bottom:15px;line-height:1.4;">📸 Vui lòng <b>CHỤP ẢNH MÀN HÌNH</b><br>để lưu lại quẻ này!</div>';
 
-function setDownloadButtonBusy(busy) {
-    const btn = document.getElementById('downloadBtn');
-    if (!btn) return;
-    if (busy) {
-        if (!btn.dataset.originalHtml) btn.dataset.originalHtml = btn.innerHTML;
-        btn.disabled = true;
-        btn.style.opacity = '0.75';
-        btn.innerHTML = '<span class="btn-icon">⏳</span> Đang chuẩn bị ảnh...';
-    } else {
-        btn.disabled = false;
-        btn.style.opacity = '';
-        if (btn.dataset.originalHtml) {
-            btn.innerHTML = btn.dataset.originalHtml;
-            delete btn.dataset.originalHtml;
-        }
-    }
-}
+    const imgContainer = document.createElement('div');
+    imgContainer.style.cssText = 'max-height:70vh; overflow-y:auto; border-radius:8px; border: 2px solid #d97706; box-shadow: 0 0 15px rgba(217,119,6,0.3);';
 
-async function uploadImageForDownload() {
-    const base64 = (currentImageDataUrl || '').split(',')[1];
-    if (!base64) throw new Error('No image data');
+    const img = document.createElement('img');
+    img.src = currentImageDataUrl;
+    img.alt = 'Kết quả quẻ Lục Hào';
+    img.style.cssText = 'max-width:100%;height:auto;display:block;';
 
-    const controller = typeof AbortController !== 'undefined' ? new AbortController() : null;
-    const timer = controller ? setTimeout(() => controller.abort(), 20000) : null;
-    try {
-        const res = await fetch('/api/download', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ image: base64 }),
-            signal: controller ? controller.signal : undefined
-        });
-        if (!res.ok) throw new Error('Upload failed: HTTP ' + res.status);
-        const data = await res.json();
-        if (!data || typeof data.id !== 'string' || !/^[a-f0-9]{32}$/.test(data.id)) {
-            throw new Error('Invalid upload response');
-        }
-        return data.id;
-    } finally {
-        if (timer) clearTimeout(timer);
-    }
-}
+    imgContainer.appendChild(img);
 
-async function downloadViaServer(filename, isInApp) {
-    if (isPreparingDownload) return;
-    isPreparingDownload = true;
-    setDownloadButtonBusy(true);
-    showToast('Đang chuẩn bị ảnh quẻ...');
+    const closeBtn = document.createElement('button');
+    closeBtn.textContent = '✕ Đóng';
+    closeBtn.style.cssText = 'margin-top:20px;background:rgba(255,255,255,0.15);color:#fff;border:none;padding:12px 36px;border-radius:10px;font-size:16px;font-weight:600;cursor:pointer;';
+    closeBtn.addEventListener('click', function() { overlay.remove(); });
 
-    try {
-        const id = await uploadImageForDownload();
-        const url = `/api/download?id=${encodeURIComponent(id)}&name=${encodeURIComponent(filename)}`;
-
-        // Mở địa chỉ thật: server trả file đính kèm nên trang KHÔNG bị chuyển đi,
-        // trình tải xuống của Android sẽ tải ảnh về thư mục Download.
-        window.location.href = url;
-
-        showToast('✅ Ảnh quẻ đang được tải về máy!<br><span style="font-size:12px;opacity:0.9;">Kéo thanh thông báo xuống để mở, hoặc vào Thư viện ➔ Album "Download / Tải về".</span>');
-    } catch (err) {
-        console.error('Server download error:', err);
-        // Dự phòng: trình duyệt thường thì tải trực tiếp, trong Facebook/Zalo thì hướng dẫn chạm giữ ảnh
-        if (!isInApp && tryBlobDownload(filename)) {
-            showToast('Đang tải ảnh về máy!<br><span style="font-size:12px;opacity:0.9;">Vào Thư viện ➔ Album "Download / Tải về" để xem ảnh.</span>');
-        } else {
-            showLongPressGuide('Chưa tải được ảnh tự động.');
-        }
-    } finally {
-        setTimeout(() => {
-            isPreparingDownload = false;
-            setDownloadButtonBusy(false);
-        }, 1500);
-    }
+    overlay.appendChild(hint);
+    overlay.appendChild(imgContainer);
+    overlay.appendChild(closeBtn);
+    document.body.appendChild(overlay);
 }
 
 function shareImageOnIOS(filename) {
@@ -1799,12 +1735,11 @@ function shareImageOnIOS(filename) {
         try {
             const file = new File([blob], filename, { type: 'image/png' });
             if (navigator.canShare({ files: [file] })) {
-                // Gọi ngay trong sự kiện bấm nút (không qua bước chờ) để iOS cho phép mở bảng chia sẻ
                 navigator.share({ files: [file], title: 'Quẻ Lục Hào' })
                     .catch(err => {
-                        if (err && err.name === 'AbortError') return; // Khách tự đóng bảng chia sẻ
+                        if (err && err.name === 'AbortError') return;
                         console.log('iOS share error:', err);
-                        showLongPressGuide();
+                        showInAppGuide();
                     });
                 return;
             }
@@ -1813,7 +1748,7 @@ function shareImageOnIOS(filename) {
         }
     }
     if (!tryBlobDownload(filename)) {
-        showLongPressGuide();
+        showInAppGuide();
     }
 }
 
@@ -1829,17 +1764,16 @@ function downloadImage() {
     const isAndroid = /Android/i.test(ua);
     const isInApp = /FBAN|FBAV|FB_IAB|FBIOS|Messenger|Zalo|ZaloTheme|Instagram|Line\/|MicroMessenger|Snapchat|Twitter|TikTok|musical_ly|BytedanceWebview|; wv\)/i.test(ua);
 
-    // 1. iPhone / iPad: Gọi menu "Lưu hình ảnh" gốc của Apple (Web Share API)
+    // 1. iPhone / iPad: Bảng "Lưu hình ảnh" của Apple (Web Share API)
     if (isIOS) {
         shareImageOnIOS(filename);
         return;
     }
 
     // 2. Android trong Facebook / Zalo / Messenger (trình duyệt nhúng):
-    // Tuyệt đối KHÔNG chuyển đổi URL / window.location để tránh popup "Rời khỏi trang" của Facebook.
-    // Cuộn mượt đến ảnh, nhấp nháy viền ảnh và hướng dẫn khách chạm giữ 1 giây -> lưu thẳng vào Bộ sưu tập.
+    // Hiện popup hướng dẫn chụp ảnh màn hình như ban đầu, khách chụp màn hình là có ảnh sắc nét gửi ngay
     if (isAndroid && isInApp) {
-        showLongPressGuide();
+        showInAppGuide();
         return;
     }
 
@@ -1849,7 +1783,7 @@ function downloadImage() {
         if (downloaded) {
             showToast('Đang tải ảnh về máy!<br><span style="font-size:12px;opacity:0.9;">Mở Thư viện ➔ chọn Album "Tải về" để xem ảnh nhé!</span>');
         } else {
-            showLongPressGuide();
+            showInAppGuide();
         }
         return;
     }
