@@ -1736,6 +1736,9 @@ function shareImageOnIOS(filename) {
             const file = new File([blob], filename, { type: 'image/png' });
             if (navigator.canShare({ files: [file] })) {
                 navigator.share({ files: [file], title: 'Quẻ Lục Hào' })
+                    .then(() => {
+                        showToast('✅ Đã lưu ảnh thành công vào Thư viện ảnh!');
+                    })
                     .catch(err => {
                         if (err && err.name === 'AbortError') return;
                         console.log('iOS share error:', err);
@@ -1781,7 +1784,7 @@ function downloadImage() {
     if (isAndroid) {
         const downloaded = tryBlobDownload(filename);
         if (downloaded) {
-            showToast('Đang tải ảnh về máy!<br><span style="font-size:12px;opacity:0.9;">Mở Thư viện ➔ chọn Album "Tải về" để xem ảnh nhé!</span>');
+            showToast('✅ Đã tải ảnh thành công về máy!<br><span style="font-size:12px;opacity:0.9;">Mở Thư viện ➔ chọn Album "Tải về" để xem ảnh nhé!</span>');
         } else {
             showInAppGuide();
         }
@@ -1790,7 +1793,7 @@ function downloadImage() {
 
     // 4. Máy tính
     if (tryBlobDownload(filename)) {
-        showToast('Đã tải ảnh về máy!');
+        showToast('✅ Đã tải ảnh thành công về máy!');
     } else {
         showToast('💡 Click chuột phải vào ảnh ➔ chọn "Lưu hình ảnh" để lưu về máy.');
     }
