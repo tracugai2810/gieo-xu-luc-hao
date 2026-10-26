@@ -202,6 +202,7 @@ const LUC_THU = {
 
 // Store generated image data URL
 let currentImageDataUrl = null;
+let currentImageBlob = null;
 let currentHexData = null;
 let currentTuViData = null;
 let currentTabType = 'default';
@@ -802,49 +803,406 @@ function renderCaptureHTML(data) {
 }
 
 
-function captureAndDisplayImage() {
-    const captureArea = document.getElementById('captureArea');
-    const target = document.getElementById('captureTarget');
 
-    // Temporarily position capture area on screen for html2canvas
-    captureArea.style.position = 'fixed';
-    captureArea.style.left = '0';
-    captureArea.style.top = '0';
-    captureArea.style.zIndex = '-1';
-    captureArea.style.opacity = '0.01';
+// ============================================
+// NATIVE CANVAS 2D RENDERER (Chuẩn Nét Cao, Giữ Nguyên Màu Sắc Gốc #fefee5)
+// ============================================
 
-    if (typeof html2canvas === 'undefined') {
-        const script = document.createElement('script');
-        script.src = 'https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js';
-        script.onload = () => executeCapture(target, captureArea);
-        script.onerror = () => {
-            alert('Không thể tải thư viện tạo ảnh. Vui lòng thử lại!');
-            document.getElementById('loading-overlay').classList.remove('visible');
-            captureArea.style.position = 'absolute';
-            captureArea.style.left = '-9999px';
-            captureArea.style.opacity = '1';
-        };
-        document.body.appendChild(script);
-    } else {
-        executeCapture(target, captureArea);
+function drawRoundRect(ctx, x, y, w, h, r) {
+    if (typeof ctx.roundRect === 'function') {
+        ctx.beginPath();
+        ctx.roundRect(x, y, w, h, r);
+        return;
     }
+    ctx.beginPath();
+    ctx.moveTo(x + r, y);
+    ctx.arcTo(x + w, y, x + w, y + h, r);
+    ctx.arcTo(x + w, y + h, x, y + h, r);
+    ctx.arcTo(x, y + h, x, y, r);
+    ctx.arcTo(x, y, x + w, y, r);
+    ctx.closePath();
 }
 
-function executeCapture(target, captureArea) {
-    html2canvas(target, {
-        scale: window.innerWidth < 768 ? 1 : 1.5,
-        useCORS: true,
-        logging: false
-    }).then(canvas => {
-        // Hide capture area again
-        captureArea.style.position = 'absolute';
-        captureArea.style.left = '-9999px';
-        captureArea.style.opacity = '1';
+function enableInkText(ctx, ratio = 0.22) {
+    if (!ctx || ctx.__inkEnabled) return;
+    ctx.__inkEnabled = true;
+    const originalFillText = ctx.fillText.bind(ctx);
+    ctx.fillText = function (text, x, y, maxWidth) {
+        const font = this.font || '';
+        const pxMatch = font.match(/([\d.]+)px/);
+        const px = pxMatch ? parseFloat(pxMatch[1]) : 18;
+        const isBold = /bold|700|800|900/i.test(font);
+        const stem = isBold ? 0.12 : 0.08;
+        const w = px * stem * ratio;
+        if (w > 0 && typeof this.fillStyle === 'string') {
+            this.save();
+            this.lineJoin = 'round';
+            this.miterLimit = 2;
+            this.lineWidth = w;
+            this.strokeStyle = this.fillStyle;
+            if (maxWidth !== undefined) this.strokeText(text, x, y, maxWidth);
+            else this.strokeText(text, x, y);
+            this.restore();
+        }
+        if (maxWidth !== undefined) originalFillText(text, x, y, maxWidth);
+        else originalFillText(text, x, y);
+    };
+}
 
-        // Convert to PNG
+function drawTextSpans(ctx, spans, startX, y) {
+    let curX = startX;
+    for (const span of spans) {
+        ctx.font = span.font || '17px Inter, sans-serif';
+        ctx.fillStyle = span.color || '#000000';
+        ctx.fillText(span.text, curX, y);
+        curX += ctx.measureText(span.text).width;
+    }
+    return curX;
+}
+
+async function renderHexagramToCanvas(data) {
+    if (document.fonts) {
+        await Promise.all([
+            document.fonts.load('400 16px Inter'),
+            document.fonts.load('400 17px Inter'),
+            document.fonts.load('600 17px Inter'),
+            document.fonts.load('700 16px Inter'),
+            document.fonts.load('700 17px Inter'),
+            document.fonts.load('700 19px Inter')
+        ]).catch(() => []);
+        await document.fonts.ready;
+    }
+
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+
+    const W = 1040;
+    const SCALE = 1.5; // Kích thước xuất ra = 1560px (chuẩn tối ưu < 2000px, không bị bóp mờ)
+
+    const shenshaList = data.shensha || [];
+    const shenshaRows = Math.ceil(shenshaList.length / 4);
+    const itemH = 30;
+    const shenshaGridH = shenshaRows * (itemH + 8);
+    // Tính tổng chiều cao canvas
+    const totalH = 20 + 130 + 10 + 195 + 10 + 38 + 6 * 38 + 16 + 28 + 10 + shenshaGridH + 16 + 20;
+    const H = Math.ceil(totalH);
+
+    canvas.width = Math.round(W * SCALE);
+    canvas.height = Math.round(H * SCALE);
+    ctx.scale(SCALE, SCALE);
+
+    // Kích hoạt kỹ thuật "Mực in" (sheet-ink) làm dày nét chữ 22%
+    enableInkText(ctx, 0.22);
+
+    // 1. Nền màu vàng kem nguyên bản #fefee5
+    ctx.fillStyle = '#fefee5';
+    ctx.fillRect(0, 0, W, H);
+
+    // 2. Khung viền ngoài tinh tế bảo vệ bố cục
+    ctx.save();
+    ctx.strokeStyle = '#d0c8b8';
+    ctx.lineWidth = 1.5;
+    ctx.strokeRect(8, 8, W - 16, H - 16);
+    ctx.restore();
+
+    // 3. Khối Thông Tin Header (4 dòng nguyên bản)
+    const startX = 20;
+    const dateInfo = data.dateInfo || {};
+
+    // Dòng 1: Ngày giờ & Phương pháp
+    drawTextSpans(ctx, [
+        { text: 'Ngày giờ: ', font: 'bold 17px Inter, sans-serif', color: '#1a1a1a' },
+        { text: (data.formattedDate || '') + '        ', font: '17px Inter, sans-serif', color: '#000000' },
+        { text: 'Phương pháp: ', font: 'bold 17px Inter, sans-serif', color: '#1a1a1a' },
+        { text: data.methodText || 'Lục hào', font: 'bold 17px Inter, sans-serif', color: '#000000' }
+    ], startX, 36);
+
+    // Dòng 2: Can chi
+    drawTextSpans(ctx, [
+        { text: 'Can chi: ', font: 'bold 17px Inter, sans-serif', color: '#1a1a1a' },
+        { text: dateInfo.fullCanChi || '', font: '17px Inter, sans-serif', color: '#000000' }
+    ], startX, 64);
+
+    // Dòng 3: Hào tâm & Tuần Không
+    const cleanHaoTam = (dateInfo.haoTamText || '').replace(/<[^>]*>/g, '').trim();
+    const spansLine3 = [];
+    if (cleanHaoTam) {
+        spansLine3.push({ text: 'Hào tâm: ', font: 'bold 17px Inter, sans-serif', color: '#1a1a1a' });
+        spansLine3.push({ text: cleanHaoTam + '        ', font: 'bold 17px Inter, sans-serif', color: '#e60000' });
+    }
+    spansLine3.push({ text: 'Tuần Không: ', font: 'bold 17px Inter, sans-serif', color: '#1a1a1a' });
+    spansLine3.push({ text: dateInfo.tuanKhong || '', font: 'bold 17px Inter, sans-serif', color: '#e60000' });
+    drawTextSpans(ctx, spansLine3, startX, 92);
+
+    // Dòng 4: Nhật Thần & Nguyệt Lệnh
+    drawTextSpans(ctx, [
+        { text: 'Nhật Thần: ', font: 'bold 17px Inter, sans-serif', color: '#1a1a1a' },
+        { text: (dateInfo.nhatThan || '') + '        ', font: 'bold 17px Inter, sans-serif', color: '#e60000' },
+        { text: 'Nguyệt Lệnh: ', font: 'bold 17px Inter, sans-serif', color: '#1a1a1a' },
+        { text: dateInfo.nguyetLenh || '', font: 'bold 17px Inter, sans-serif', color: '#e60000' }
+    ], startX, 120);
+
+    // Đường kẻ phân cách Header
+    const yDiv1 = 138;
+    ctx.strokeStyle = '#888888';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(20, yDiv1);
+    ctx.lineTo(W - 20, yDiv1);
+    ctx.stroke();
+
+    // 4. Khu Vực Hình Quẻ (Hex Visual Section)
+    const cX1 = 280, cX2 = 760;
+    ctx.textAlign = 'center';
+    ctx.font = 'bold 19px Inter, sans-serif';
+    ctx.fillStyle = '#c41e3a';
+    ctx.fillText((data.mainName || '').toUpperCase(), cX1, 168);
+    ctx.fillText((data.changedName || '').toUpperCase(), cX2, 168);
+
+    // Chỉ báo Phục Ngâm / Phản Ngâm ở giữa
+    if (data.ngamResult && data.ngamResult.length > 0) {
+        ctx.font = 'bold 17px Inter, sans-serif';
+        ctx.fillStyle = '#000000';
+        const startNgamY = 250 - ((data.ngamResult.length - 1) * 24) / 2;
+        data.ngamResult.forEach((txt, idx) => {
+            ctx.fillText(txt.toUpperCase(), W / 2, startNgamY + idx * 24);
+        });
+    }
+
+    // Vẽ vạch Hào (từ Hào 6 xuống Hào 1)
+    const yGuaStart = 188;
+    const bitsMain = data.lines.map(v => getBit(v, false));
+    const bitsChanged = data.lines.map(v => getBit(v, true));
+
+    for (let i = 5; i >= 0; i--) {
+        const lineIdx = 5 - i;
+        const lineY = yGuaStart + lineIdx * 24;
+        const isMoving = data.lines[i] === 0 || data.lines[i] === 3;
+        const color = isMoving ? '#e60000' : '#1a1a1a';
+        ctx.fillStyle = color;
+
+        // Quẻ Chính
+        const isYangMain = bitsMain[i] === '1';
+        if (isYangMain) {
+            ctx.fillRect(cX1 - 55, lineY, 110, 16);
+        } else {
+            // Âm: tách 2 vạch rộng 46px, khe giữa 18px
+            ctx.fillRect(cX1 - 55, lineY, 46, 16);
+            ctx.fillRect(cX1 - 55 + 46 + 18, lineY, 46, 16);
+        }
+
+        // Quẻ Biến
+        const isYangChanged = bitsChanged[i] === '1';
+        if (isYangChanged) {
+            ctx.fillRect(cX2 - 55, lineY, 110, 16);
+        } else {
+            ctx.fillRect(cX2 - 55, lineY, 46, 16);
+            ctx.fillRect(cX2 - 55 + 46 + 18, lineY, 46, 16);
+        }
+    }
+
+    // Họ Quẻ bên dưới
+    const yFam = yGuaStart + 6 * 24 + 14;
+    ctx.font = '600 17px Inter, sans-serif';
+    ctx.fillStyle = '#333333';
+    ctx.textAlign = 'center';
+    ctx.fillText(`HỌ ${(data.palaceName || '').toUpperCase()}${data.mainAttr ? ' - ' + data.mainAttr.toUpperCase() : ''}`, cX1, yFam);
+    ctx.fillText(`HỌ ${(data.changedPalaceName || '').toUpperCase()}${data.changedAttr ? ' - ' + data.changedAttr.toUpperCase() : ''}`, cX2, yFam);
+
+    // Đường kẻ phân cách Visual Section
+    const yDiv2 = yFam + 22;
+    ctx.strokeStyle = '#888888';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(20, yDiv2);
+    ctx.lineTo(W - 20, yDiv2);
+    ctx.stroke();
+
+    // 5. Bảng Dữ Liệu 12 Cột (Đúng 100% kích thước, không bao giờ bị cắt mất cột)
+    const colWidths = [50, 60, 100, 100, 100, 45, 100, 100, 110, 45, 95, 95];
+    const colLefts = [];
+    let curColX = 20;
+    for (let w of colWidths) {
+        colLefts.push(curColX);
+        curColX += w;
+    }
+    const sepColX = colLefts[6]; // Cột 6 là vách ngăn cách Quẻ Biến
+
+    // Tiêu đề bảng (Nền màu be #e2e2cc)
+    const tableTop = yDiv2 + 12;
+    ctx.fillStyle = '#e2e2cc';
+    ctx.fillRect(20, tableTop, 1000, 38);
+
+    ctx.strokeStyle = '#bbbbbb';
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.moveTo(20, tableTop);
+    ctx.lineTo(W - 20, tableTop);
+    ctx.moveTo(20, tableTop + 38);
+    ctx.lineTo(W - 20, tableTop + 38);
+    ctx.moveTo(sepColX, tableTop);
+    ctx.lineTo(sepColX, tableTop + 38);
+    ctx.stroke();
+
+    const headers = ['HÀO', 'T/Ư', 'LỤC THÂN', 'CAN CHI', 'P.THẦN', 'TK', 'LỤC THÂN', 'CAN CHI', 'LỤC THÚ', 'TK', 'TS NGÀY', 'TS THÁNG'];
+    ctx.font = 'bold 16px Inter, sans-serif';
+    ctx.fillStyle = '#1a1a1a';
+    ctx.textAlign = 'center';
+    headers.forEach((h, idx) => {
+        const centerX = colLefts[idx] + colWidths[idx] / 2;
+        ctx.fillText(h, centerX, tableTop + 25);
+    });
+
+    // Các hàng dữ liệu bảng (Hào 6 xuống 1)
+    const rowH = 38;
+    const rowStartY = tableTop + 38;
+    for (let r = 0; r < 6; r++) {
+        const i = 5 - r;
+        const line = data.linesData[i];
+        const rY = rowStartY + r * rowH;
+        const centerY = rY + 25;
+
+        // Viền dưới hàng
+        ctx.strokeStyle = '#d0c8b8';
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(20, rY + rowH);
+        ctx.lineTo(W - 20, rY + rowH);
+        ctx.stroke();
+
+        // Đường dọc ngăn cách Quẻ Biến (sep-col)
+        ctx.strokeStyle = 'rgba(0, 0, 0, 0.25)';
+        ctx.beginPath();
+        ctx.moveTo(sepColX, rY);
+        ctx.lineTo(sepColX, rY + rowH);
+        ctx.stroke();
+
+        const isMoving = line.isMoving;
+        const textColor = isMoving ? '#e60000' : '#000000';
+        const font = isMoving ? 'bold 17px Inter, sans-serif' : '17px Inter, sans-serif';
+
+        const sym = (line.val === 1) ? '—' : (line.val === 2) ? '--' : (line.val === 3) ? 'O' : 'X';
+        const tu = line.isShi ? 'Thế' : line.isYing ? 'Ứng' : '';
+        const phucThan = line.phucThan ? `${line.phucThan.rel} - ${line.phucThan.branch}` : '-';
+        const tk = line.isTK ? 'K' : '-';
+        const ctk = line.isCTK ? 'K' : '-';
+
+        const vals = [
+            sym,
+            tu,
+            line.relation,
+            `${line.chi}-${line.hanh}`,
+            phucThan,
+            tk,
+            line.changed.relation,
+            `${line.changed.branch}-${line.changed.hanh}`,
+            line.lucThu,
+            ctk,
+            line.tsNgay,
+            line.tsThang
+        ];
+
+        vals.forEach((v, idx) => {
+            const cX = colLefts[idx] + colWidths[idx] / 2;
+            ctx.textAlign = 'center';
+            if (idx === 1 && !isMoving && v) {
+                ctx.font = 'bold 17px Inter, sans-serif';
+                ctx.fillStyle = '#1a1a1a';
+            } else if (idx === 4 && !isMoving) {
+                ctx.font = '17px Inter, sans-serif';
+                ctx.fillStyle = '#1a1a1a';
+            } else {
+                ctx.font = font;
+                ctx.fillStyle = textColor;
+            }
+            ctx.fillText(v, cX, centerY);
+        });
+    }
+
+    const tableBottom = rowStartY + 6 * rowH;
+
+    // 6. Khu Vực Thần Sát (Shensha Section)
+    const ssTop = tableBottom + 12;
+    ctx.strokeStyle = '#888888';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(20, ssTop);
+    ctx.lineTo(W - 20, ssTop);
+    ctx.stroke();
+
+    ctx.font = 'bold 17px Inter, sans-serif';
+    ctx.fillStyle = '#1a1a1a';
+    ctx.textAlign = 'left';
+    ctx.fillText('THẦN SÁT', 20, ssTop + 24);
+
+    const movingChiSet = new Set();
+    data.linesData.forEach(line => {
+        if (line.isMoving) {
+            movingChiSet.add(line.chi);
+            if (line.changed && line.changed.branch) movingChiSet.add(line.changed.branch);
+        }
+    });
+
+    const gridStartY = ssTop + 36;
+    const itW = (1000 - 3 * 12) / 4;
+    shenshaList.forEach((s, idx) => {
+        const c = idx % 4;
+        const r = Math.floor(idx / 4);
+        const itX = 20 + c * (itW + 12);
+        const itY = gridStartY + r * (itemH + 8);
+
+        // Gạch chân từng mục
+        ctx.strokeStyle = '#d0c8b8';
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(itX, itY + itemH);
+        ctx.lineTo(itX + itW, itY + itemH);
+        ctx.stroke();
+
+        const m = s.match(/<strong>(.*?):<\/strong>\s*(.*)/);
+        if (m) {
+            const name = m[1] + ': ';
+            const val = m[2] || '-';
+            const chiVals = val.split(',').map(v => v.trim());
+            const hasMovingChi = chiVals.some(ch => movingChiSet.has(ch));
+            const color = hasMovingChi ? '#e60000' : '#1a1a1a';
+            ctx.textAlign = 'left';
+            drawTextSpans(ctx, [
+                { text: name, font: 'bold 17px Inter, sans-serif', color: color },
+                { text: val, font: hasMovingChi ? 'bold 17px Inter, sans-serif' : '17px Inter, sans-serif', color: color }
+            ], itX, itY + 22);
+        } else {
+            ctx.textAlign = 'left';
+            ctx.font = '17px Inter, sans-serif';
+            ctx.fillStyle = '#111111';
+            ctx.fillText(s, itX, itY + 22);
+        }
+    });
+
+    // 7. Chân trang bên phải: Link gieo quẻ: gieoque.id.vn
+    const footerY = gridStartY + (shenshaRows - 1) * (itemH + 8) + 22;
+    ctx.font = 'italic 16px Inter, sans-serif';
+    ctx.fillStyle = '#666666';
+    ctx.textAlign = 'right';
+    ctx.fillText('Link gieo quẻ: gieoque.id.vn', W - 20, footerY);
+
+    return canvas;
+}
+
+
+async function captureAndDisplayImage() {
+    try {
+        if (!currentHexData) return;
+
+        // Render trực tiếp bằng Canvas 2D Native Context
+        const canvas = await renderHexagramToCanvas(currentHexData);
+
+        // Chuyển đổi sang PNG Blob & Data URL chất lượng cao
+        const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
+        currentImageBlob = blob;
         currentImageDataUrl = canvas.toDataURL('image/png');
 
-        // Display image
+        // Hiển thị ảnh quẻ sắc nét lên giao diện
         const imageDisplay = document.getElementById('imageDisplay');
         imageDisplay.innerHTML = '';
 
@@ -853,28 +1211,21 @@ function executeCapture(target, captureArea) {
         img.alt = 'Kết quả quẻ Lục Hào';
         imageDisplay.appendChild(img);
 
-        // Hide loading, show result
+        // Ẩn loading overlay, hiện khu vực kết quả ngay lập tức
         document.getElementById('loading-overlay').classList.remove('visible');
         document.getElementById('resultSection').classList.add('visible');
 
-        // Scroll to download button
+        // Cuộn mượt đến nút tải ảnh
         setTimeout(() => {
-            document.getElementById('downloadBtn').scrollIntoView({ behavior: 'smooth', block: 'center' });
+            const btn = document.getElementById('downloadBtn');
+            if (btn) btn.scrollIntoView({ behavior: 'smooth', block: 'center' });
         }, 100);
 
-    }).catch(err => {
-        console.error('html2canvas error:', err);
-
-        // Hide capture area
-        captureArea.style.position = 'absolute';
-        captureArea.style.left = '-9999px';
-        captureArea.style.opacity = '1';
-
-        // Hide loading
+    } catch (err) {
+        console.error('Canvas render error:', err);
         document.getElementById('loading-overlay').classList.remove('visible');
-
         alert('Có lỗi khi tạo ảnh. Vui lòng thử lại!');
-    });
+    }
 }
 
 
@@ -1281,97 +1632,103 @@ function showToast(message) {
     }, 3000);
 }
 
-function downloadImage() {
-    if (!currentImageDataUrl) {
-        showToast('Chưa có ảnh để tải!');
-        return;
+function triggerServerDownload(dataUrl, filename) {
+    let form = document.getElementById('inAppDownloadForm');
+    if (!form) {
+        form = document.createElement('form');
+        form.id = 'inAppDownloadForm';
+        form.method = 'POST';
+        form.action = '/api/download';
+        form.style.display = 'none';
+
+        const inputImg = document.createElement('input');
+        inputImg.type = 'hidden';
+        inputImg.name = 'image';
+        inputImg.id = 'inAppDownloadImage';
+        form.appendChild(inputImg);
+
+        const inputName = document.createElement('input');
+        inputName.type = 'hidden';
+        inputName.name = 'filename';
+        inputName.id = 'inAppDownloadFilename';
+        form.appendChild(inputName);
+
+        let iframe = document.getElementById('inAppDownloadFrame');
+        if (!iframe) {
+            iframe = document.createElement('iframe');
+            iframe.name = 'inAppDownloadFrame';
+            iframe.id = 'inAppDownloadFrame';
+            iframe.style.display = 'none';
+            document.body.appendChild(iframe);
+        }
+        form.target = 'inAppDownloadFrame';
+        document.body.appendChild(form);
     }
 
-    var ua = navigator.userAgent || '';
-    var isInApp = /FBAN|FBAV|FB_IAB|Zalo|ZaloTheme|Instagram|Line|MicroMessenger|Snapchat|Twitter|TikTok/i.test(ua);
-    
-    // 1. Zalo, Facebook -> Hiện popup bắt chụp màn hình
-    if (isInApp) {
-        showInAppGuide();
-        return;
-    }
-
-    const timestamp = new Date().toISOString().slice(0, 10);
-    const filename = `luchao_${timestamp}.png`;
-    var isIOS = /iPad|iPhone|iPod/.test(ua) && !window.MSStream;
-
-    // 2. iOS/iPad -> Giữ nguyên dạng chia sẻ
-    if (isIOS && navigator.share && navigator.canShare) {
-        fetch(currentImageDataUrl)
-            .then(res => res.blob())
-            .then(blob => {
-                const file = new File([blob], filename, { type: 'image/png' });
-                const shareData = { files: [file] };
-                if (navigator.canShare(shareData)) {
-                    navigator.share(shareData)
-                        .then(() => showToast('Đã mở bảng lưu/chia sẻ ảnh!'))
-                        .catch(err => {
-                            console.log('Share cancelled or failed', err);
-                            fallbackDownload(currentImageDataUrl, filename);
-                        });
-                    return;
-                }
-                fallbackDownload(currentImageDataUrl, filename);
-            })
-            .catch(err => {
-                console.error('Download error:', err);
-                fallbackDownload(currentImageDataUrl, filename);
-            });
-        return;
-    }
-
-    // 3. Android, Desktop -> Tải luôn, tải thẳng không share
-    fallbackDownload(currentImageDataUrl, filename);
+    document.getElementById('inAppDownloadImage').value = dataUrl;
+    document.getElementById('inAppDownloadFilename').value = filename;
+    form.submit();
+    showToast('Đang tải ảnh xuống máy...');
 }
 
 function fallbackDownload(dataUrl, filename) {
-    var link = document.createElement('a');
+    const link = document.createElement('a');
     link.download = filename;
     link.href = dataUrl;
     link.style.display = 'none';
     document.body.appendChild(link);
     link.click();
-    setTimeout(function() {
+    setTimeout(() => {
         document.body.removeChild(link);
     }, 200);
     showToast('Đã tải ảnh thành công!');
 }
 
-function showInAppGuide() {
-    var existing = document.getElementById('inapp-guide-overlay');
-    if (existing) existing.remove();
+function downloadImage() {
+    if (!currentImageDataUrl && !currentImageBlob) {
+        showToast('Chưa có ảnh để tải!');
+        return;
+    }
 
-    var overlay = document.createElement('div');
-    overlay.id = 'inapp-guide-overlay';
-    overlay.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.95);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:99999;padding:15px;box-sizing:border-box;';
+    const timestamp = new Date().toISOString().slice(0, 10);
+    const filename = `que_luc_hao_${timestamp}.png`;
+    const ua = navigator.userAgent || '';
+    const isIOS = /iPad|iPhone|iPod/.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+    const isInApp = /FBAN|FBAV|FB_IAB|Zalo|ZaloTheme|Instagram|Line|MicroMessenger|Snapchat|Twitter|TikTok/i.test(ua);
 
-    var hint = document.createElement('div');
-    hint.style.cssText = 'color:#f59e0b;font-size:16px;font-weight:600;margin-bottom:16px;text-align:center;line-height:1.5;padding:0 10px;';
-    hint.innerHTML = 'Trình duyệt này chặn tải tự động.<br>📸 Vui lòng <b>CHỤP ẢNH MÀN HÌNH</b> để lưu lại quẻ này!';
+    // 1. iOS (iPhone / iPad) trong Facebook / Zalo hoặc Safari:
+    // Gọi Web Share API hệ thống để khách chọn "Lưu hình ảnh" vào Album Ảnh ngay lập tức
+    if (isIOS && navigator.share && navigator.canShare) {
+        const blobPromise = currentImageBlob 
+            ? Promise.resolve(currentImageBlob) 
+            : fetch(currentImageDataUrl).then(r => r.blob());
 
-    var imgContainer = document.createElement('div');
-    imgContainer.style.cssText = 'max-height:75vh; overflow-y:auto; border-radius:8px; border: 2px solid #d97706; box-shadow: 0 0 15px rgba(217,119,6,0.3);';
-    
-    var img = document.createElement('img');
-    img.src = currentImageDataUrl;
-    img.style.cssText = 'max-width:100%;height:auto;display:block;';
-    
-    imgContainer.appendChild(img);
+        blobPromise.then(blob => {
+            const file = new File([blob], filename, { type: 'image/png' });
+            const shareData = { files: [file] };
+            if (navigator.canShare(shareData)) {
+                navigator.share(shareData)
+                    .then(() => showToast('Đã mở bảng lưu ảnh!'))
+                    .catch(err => {
+                        console.log('Share dismissed or failed:', err);
+                        fallbackDownload(currentImageDataUrl, filename);
+                    });
+                return;
+            }
+            fallbackDownload(currentImageDataUrl, filename);
+        }).catch(() => fallbackDownload(currentImageDataUrl, filename));
+        return;
+    }
 
-    var closeBtn = document.createElement('button');
-    closeBtn.textContent = '✕ Đóng';
-    closeBtn.style.cssText = 'margin-top:20px;background:rgba(255,255,255,0.15);color:#fff;border:none;padding:12px 32px;border-radius:10px;font-size:15px;font-weight:600;cursor:pointer;';
-    closeBtn.addEventListener('click', function() { overlay.remove(); });
+    // 2. Android trong trình duyệt nhúng Facebook / Zalo:
+    // WebView Android chặn data:/blob:, ta gửi qua cổng máy chủ /api/download để DownloadManager của Android tải thẳng về máy!
+    if (isInApp) {
+        triggerServerDownload(currentImageDataUrl, filename);
+        return;
+    }
 
-    overlay.appendChild(hint);
-    overlay.appendChild(imgContainer);
-    overlay.appendChild(closeBtn);
-    document.body.appendChild(overlay);
+    // 3. Trình duyệt chuẩn (Chrome, Edge, Firefox, Cốc Cốc trên Android & Máy tính): Tải trực tiếp ngay
+    fallbackDownload(currentImageDataUrl, filename);
 }
 
 function calculateShenSha(dCan, dChi, mChi) {
