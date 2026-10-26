@@ -417,7 +417,48 @@ function calculateCanChi(dateInput) {
 // ============================================
 
 // Tab state removed, only coins is used.
+
+function getChromeIntentUrl() {
+    const url = window.location.href.replace(/#.*$/, '');
+    const cleanUrl = url.replace(/^https?:\/\//, '');
+    return `intent://${cleanUrl}#Intent;scheme=https;package=com.android.chrome;end`;
+}
+
+function closeInAppBanner() {
+    const banner = document.getElementById('inapp-browser-banner');
+    if (banner) banner.style.display = 'none';
+}
+
+function checkAutoOpenExternalBrowser() {
+    const ua = navigator.userAgent || '';
+    const isAndroid = /Android/i.test(ua);
+    const isInApp = /FBAN|FBAV|FB_IAB|Zalo|ZaloTheme|Line|MicroMessenger|Snapchat|TikTok/i.test(ua);
+
+    if (isAndroid && isInApp) {
+        const banner = document.getElementById('inapp-browser-banner');
+        if (banner) banner.style.display = 'flex';
+
+        const btn = document.getElementById('btnOpenExternalBrowser');
+        const intentUrl = getChromeIntentUrl();
+        if (btn) {
+            btn.href = intentUrl;
+            btn.onclick = function(e) {
+                window.location.href = intentUrl;
+            };
+        }
+
+        // Tự động mở Chrome lần đầu khi người dùng bấm vào link chia sẻ trên FB/Zalo
+        if (!sessionStorage.getItem('opened_chrome_intent')) {
+            sessionStorage.setItem('opened_chrome_intent', 'true');
+            setTimeout(() => {
+                window.location.href = intentUrl;
+            }, 350);
+        }
+    }
+}
+
 function init() {
+    checkAutoOpenExternalBrowser();
     // Load Vietnamese Calligraphy Font dynamically
     if (!document.getElementById('charm-font-link')) {
         const link = document.createElement('link');

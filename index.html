@@ -78,6 +78,15 @@
     <noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-WGN2HS5B"
     height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
     <!-- End Google Tag Manager (noscript) -->
+        <!-- In-App Browser Banner (hiển thị khi vào từ Facebook/Zalo trên Android) -->
+    <div id="inapp-browser-banner" class="inapp-banner" style="display: none;">
+        <div class="inapp-banner-content">
+            <span class="inapp-banner-icon">🌐</span>
+            <span class="inapp-banner-text">Mở bằng <b>Chrome</b> để tải ảnh về máy dễ nhất:</span>
+            <a href="#" id="btnOpenExternalBrowser" class="inapp-banner-btn">Mở Chrome</a>
+        </div>
+        <button type="button" class="inapp-banner-close" onclick="closeInAppBanner()" aria-label="Đóng">✕</button>
+    </div>
     <div class="app-container">
         <main class="main-content">
             <!-- Hero -->
